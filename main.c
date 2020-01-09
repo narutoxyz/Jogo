@@ -20,27 +20,30 @@ int main(int argc, char *argv[])
     SDL_Surface *surface = IMG_Load("imagens/recorde.jpg");
 	SDL_Texture *textura = SDL_CreateTextureFromSurface(renderer, surface);
 
+	Mix_Music *musica = Mix_LoadMUS("musicas/menu.ogg");
+	Mix_PlayMusic(musica, -1);
+
 	while(jogando == 1)
-	    {
-	        SDL_RenderClear(renderer);
+    {
+        SDL_RenderClear(renderer);
 
-	        SDL_RenderCopy(renderer, textura, NULL, NULL);
+        SDL_RenderCopy(renderer, textura, NULL, NULL);
 
-	        while(SDL_PollEvent(&evento) != 0)
-	        {
-	            if(evento.type == SDL_QUIT)
-	                jogando = 0;
+        while(SDL_PollEvent(&evento) != 0)
+        {
+            if(evento.type == SDL_QUIT)
+                jogando = 0;
 
-	            if(evento.type == SDL_KEYDOWN)
-	            {
-	            	jogando = 0;
-	            }
-	        }
+            if(evento.type == SDL_KEYDOWN)
+            {
+            	jogando = 0;
+            }
+        }
 
-	        SDL_RenderPresent(renderer);
+        SDL_RenderPresent(renderer);
 
-	        SDL_Delay(1000/30);
-	    }
+        SDL_Delay(1000/30);
+    }
 
 	return 0;
 }
