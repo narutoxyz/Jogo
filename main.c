@@ -5,6 +5,29 @@
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_ttf.h>
 
+//SDL_Rect sRect = {xTextura, yTextura, larguraFigura, alturaFigura};
+//SDL_Rect dRect = {xRenderer, yRenderer, larguraFigura, alturaFigura};
+//{0,0,467,474}
+
+/*---Estruturas---*/
+
+typedef struct inimigo
+{
+    int numInimigos; // 3 inimigos
+    //char dir[] = "imagens/inimigos.png";
+    SDL_Texture *texInimigos;
+    SDL_Rect *spriteInimigo;
+}Inimigo;
+
+typedef struct jogador
+{
+    int vida; // 3 vidas
+    char nome[];
+    //char dir[] = "imagens/spritenave.png";
+    SDL_Texture *texJogador;
+    SDL_Rect *spriteNave;
+}Jogador;
+
 int main(int argc, char *argv[])
 {
 	//VARIAVEIS
