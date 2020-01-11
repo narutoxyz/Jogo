@@ -30,8 +30,6 @@ typedef struct jogador
     SDL_Rect *sprite;
 }Jogador;
 
-
-void carregarTexturas(SDL_Renderer *renderer, Jogador *jogador, Inimigo *inimigo, SDL_Texture *menu, SDL_Texture *jogo, SDL_Texture *recorde, SDL_Texture *credito);
 void iniciarMenu(int *load, SDL_Texture *menu, SDL_Texture *textura, Mix_Music *musicaMenu);
 
 int main(int argc, char *argv[])
@@ -53,14 +51,28 @@ int main(int argc, char *argv[])
 
     SDL_Event evento;
 
+    SDL_Surface *surface;
     SDL_Texture *textura;
+
     SDL_Texture *menu;
+    surface = IMG_Load("imagens/menu.jpeg");
+    menu = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_Texture *jogo;
+    surface = IMG_Load("imagens/jogo.jpeg");
+    jogo = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_Texture *recorde;
+    surface = IMG_Load("imagens/recorde.jpg");
+    recorde = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_Texture *credito;
+    surface = IMG_Load("imagens/credito.jpeg");
+    credito = SDL_CreateTextureFromSurface(renderer, surface);
 
     Jogador *jogador = (Jogador*) malloc(sizeof(Jogador));
+    surface = IMG_Load("imagens/nave.png");
+    jogador->textura = SDL_CreateTextureFromSurface(renderer, surface);
     Inimigo *inimigo = (Inimigo*) malloc(sizeof(Inimigo));
+    surface = IMG_Load("imagens/inimigos.png");
+    inimigo->textura = SDL_CreateTextureFromSurface(renderer, surface);
 
     jogador->vida = 3;
     jogador->nome = (char*) malloc(sizeof(char)*30);
@@ -74,8 +86,6 @@ int main(int argc, char *argv[])
 
     //SDL_Rect aux = {0,0,467,474};
     //inimigo->sprite[0] = aux;
-
-    carregarTexturas(renderer, jogador, inimigo, menu, jogo, recorde, credito);
 
 	while(jogando == 1)
     {
@@ -106,8 +116,6 @@ int main(int argc, char *argv[])
                 }
             }
         }
-
-        printf("Load: %d", load);
 
         while(SDL_PollEvent(&evento) != 0)
         {
@@ -152,29 +160,6 @@ int main(int argc, char *argv[])
     }
 
 	return 0;
-}
-
-void carregarTexturas(SDL_Renderer *renderer, Jogador *jogador, Inimigo *inimigo, SDL_Texture *menu, SDL_Texture *jogo, SDL_Texture *recorde, SDL_Texture *credito)
-{
-    SDL_Surface *surface;
-
-    surface = IMG_Load("imagens/menu.jpeg");
-    menu = SDL_CreateTextureFromSurface(renderer, surface);
-
-    surface = IMG_Load("imagens/jogo.jpeg");
-    jogo = SDL_CreateTextureFromSurface(renderer, surface);
-
-    surface = IMG_Load("imagens/recorde.jpg");
-    recorde = SDL_CreateTextureFromSurface(renderer, surface);
-
-    surface = IMG_Load("imagens/credito.jpeg");
-    credito = SDL_CreateTextureFromSurface(renderer, surface);
-
-    surface = IMG_Load("imagens/nave.png");
-    jogador->textura = SDL_CreateTextureFromSurface(renderer, surface);
-
-    surface = IMG_Load("imagens/inimigos.png");
-    inimigo->textura = SDL_CreateTextureFromSurface(renderer, surface);
 }
 
 void iniciarMenu(int *load, SDL_Texture *menu, SDL_Texture *textura, Mix_Music *musicaMenu)
