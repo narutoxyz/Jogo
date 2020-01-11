@@ -30,7 +30,7 @@ typedef struct jogador
     SDL_Rect *sprite;
 }Jogador;
 
-void iniciarMenu(int *load, SDL_Texture *menu, SDL_Texture *textura, Mix_Music *musicaMenu);
+void iniciarMenu(SDL_Renderer *renderer, int *load, SDL_Texture *menu, SDL_Texture *textura, Mix_Music *musicaMenu);
 
 int main(int argc, char *argv[])
 {
@@ -87,6 +87,8 @@ int main(int argc, char *argv[])
     //SDL_Rect aux = {0,0,467,474};
     //inimigo->sprite[0] = aux;
 
+    //textura = menu;
+
 	while(jogando == 1)
     {
         SDL_RenderClear(renderer);
@@ -99,7 +101,7 @@ int main(int argc, char *argv[])
                 case 0://Menu
                 {
                     printf("Load: %d", load);
-                    iniciarMenu(&load, menu, textura, musicaMenu);
+                    iniciarMenu(renderer, &load, menu, textura, musicaMenu);
                     break;
                 }
                 case 1://Jogo
@@ -162,10 +164,11 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-void iniciarMenu(int *load, SDL_Texture *menu, SDL_Texture *textura, Mix_Music *musicaMenu)
+void iniciarMenu(SDL_Renderer *renderer, int *load, SDL_Texture *menu, SDL_Texture *textura, Mix_Music *musicaMenu)
 {
     Mix_PlayMusic(musicaMenu, -1);
     textura = menu;
+    SDL_RenderCopy(renderer, textura, NULL, NULL);
     *load = 1;
     return;
 }
