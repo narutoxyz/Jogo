@@ -30,13 +30,13 @@ typedef struct jogador
     SDL_Rect *sprite;
 }Jogador;
 
-void iniciarMenu(SDL_Renderer *renderer, int *load, SDL_Texture *menu, SDL_Texture *textura, Mix_Music *musicaMenu);
+void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu);
 
 int main(int argc, char *argv[])
 {
     //VARIAVEIS SIMPLES
     int largura = 640, altura = 480;
-    int jogando = 1, load = 0, escolha = 0;
+    int jogando = 1, escolha = 0;
 
     //INICIALIZADORES DO SDL
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -93,32 +93,26 @@ int main(int argc, char *argv[])
     {
         SDL_RenderClear(renderer);
 
-        //Se a tela não foi carregada, carregue dependendo do menu.
-        if(load == 0)
+        switch(escolha)
         {
-            switch(escolha)
+            case 0://Menu
             {
-                case 0://Menu
-                {
-                    printf("Load: %d", load);
-                    iniciarMenu(renderer, &load, menu, textura, musicaMenu);
-                    break;
-                }
-                case 1://Jogo
-                {
-                    break;
-                }
-                case 2://Recorde
-                {
-                    break;
-                } 
-                case 3://Créditos
-                {
-                    break;
-                }
+                iniciarMenu(renderer, menu, musicaMenu);
+                break;
+            }
+            case 1://Jogo
+            {
+                break;
+            }
+            case 2://Recorde
+            {
+                break;
+            } 
+            case 3://Créditos
+            {
+                break;
             }
         }
-
         while(SDL_PollEvent(&evento) != 0)
         {
             //Fechou a tela
@@ -155,7 +149,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        SDL_RenderCopy(renderer, textura, NULL, NULL);
+        //SDL_RenderCopy(renderer, textura, NULL, NULL);
         SDL_RenderPresent(renderer);
 
         SDL_Delay(1000/30);
@@ -164,11 +158,13 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-void iniciarMenu(SDL_Renderer *renderer, int *load, SDL_Texture *menu, SDL_Texture *textura, Mix_Music *musicaMenu)
+//void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, SDL_Texture *textura, Mix_Music *musicaMenu)
+
+void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu)
 {
-    Mix_PlayMusic(musicaMenu, -1);
-    textura = menu;
-    SDL_RenderCopy(renderer, textura, NULL, NULL);
-    *load = 1;
+    if(Mix_PlayingMusic() == 0)
+        Mix_PlayMusic(musicaMenu, -1);
+
+    SDL_RenderCopy(renderer, menu, NULL, NULL);
     return;
 }
