@@ -35,7 +35,7 @@ typedef struct obj
     SDL_Rect rect;
 }Objeto;
 
-void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, int opcao);
+void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu);
 
 int main(int argc, char *argv[])
 {
@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 
     //INICIALIZADORES DO SDL
     SDL_Init(SDL_INIT_EVERYTHING);
-    SDL_Window *janela = SDL_CreateWindow("jogo",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,largura, altura,SDL_WINDOW_SHOWN);
+    SDL_Window *janela = SDL_CreateWindow("Space Attack",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,largura, altura,SDL_WINDOW_SHOWN);
     SDL_Renderer *renderer = SDL_CreateRenderer(janela,-1,0);
     Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2, 4096);
     TTF_Init();
@@ -56,7 +56,10 @@ int main(int argc, char *argv[])
 	//VARIAVEIS SDL, STRUCTS
 
     TTF_Font *fonteStarWars = TTF_OpenFont("letras/Starjedi.ttf", 52);
+    TTF_Font *titulo = TTF_OpenFont("letras/Starjout.ttf", 60);
+
     SDL_Color verde = {7,224,71};
+    SDL_Color amarelo = {233, 225, 0};
 
     Mix_Music *musicaMenu = Mix_LoadMUS("musicas/menu.ogg");
     Mix_Music *musicaJogo = Mix_LoadMUS("musicas/jogo.ogg");
@@ -88,9 +91,15 @@ int main(int argc, char *argv[])
     SDL_Rect aux3 = {(largura - surface->w)/2, 2*tam+((altura - surface->h)/2), surface->w, surface->h};
     textoCredito->rect = aux3;
 
+    Objeto *textoTitulo = (Objeto*) malloc(sizeof(Objeto));
+    surface = TTF_RenderText_Solid(titulo, "Space Attack", amarelo);
+    textoTitulo->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect aux4 = {(largura - surface->w)/2, 0, surface->w, surface->h};
+    textoTitulo->rect = aux4;
+
     //Fundos
     SDL_Texture *menu;
-    surface = IMG_Load("imagens/menu.jpeg");
+    surface = IMG_Load("imagens/menu.jpg");
     menu = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_Texture *jogo;
     surface = IMG_Load("imagens/jogo.jpeg");
@@ -106,7 +115,9 @@ int main(int argc, char *argv[])
     Objeto *alien = (Objeto*) malloc(sizeof(Objeto));
     surface = IMG_Load("imagens/alien.png");
     alien->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    //alien->rect = {200,150,30,30};
+    Objeto *yoda = (Objeto*) malloc(sizeof(Objeto));
+    surface = IMG_Load("imagens/babyyoda.png");
+    yoda->textura = SDL_CreateTextureFromSurface(renderer, surface);
     Jogador *jogador = (Jogador*) malloc(sizeof(Jogador));
     surface = IMG_Load("imagens/nave.png");
     jogador->textura = SDL_CreateTextureFromSurface(renderer, surface);
@@ -137,7 +148,7 @@ int main(int argc, char *argv[])
         {
             case 0://Menu
             {
-                iniciarMenu(renderer, menu, musicaMenu, textoPlay, textoRecorde, textoCredito, alien, opcaoMenu);
+                iniciarMenu(renderer, menu, musicaMenu, textoTitulo, textoPlay, textoRecorde, textoCredito, alien, yoda, opcaoMenu);
                 break;
             }
             case 1://Jogo
@@ -226,13 +237,14 @@ int main(int argc, char *argv[])
 
 //void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, SDL_Texture *textura, Mix_Music *musicaMenu)
 
-void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, int opcaoMenu)
+void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu)
 {
     if(Mix_PlayingMusic() == 0)
         Mix_PlayMusic(musicaMenu, -1);
 
     SDL_RenderCopy(renderer, menu, NULL, NULL);
 
+    SDL_RenderCopy(renderer, textoTitulo->textura, NULL, &textoTitulo->rect);
     SDL_RenderCopy(renderer, textoPlay->textura, NULL, &textoPlay->rect);
     SDL_RenderCopy(renderer, textoRecorde->textura, NULL, &textoRecorde->rect);
     SDL_RenderCopy(renderer, textoCredito->textura, NULL, &textoCredito->rect);
@@ -241,9 +253,15 @@ void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMen
     {
         case 0: //Botão Jogar
         {
+            //Alien
             SDL_Rect aux1 = {textoPlay->rect.x - 60, textoPlay->rect.y + 20,48,50};
             alien->rect = aux1;
             SDL_RenderCopy(renderer, alien->textura, NULL, &alien->rect);
+
+            //Baby Yoda
+            SDL_Rect aux11 = {textoPlay->rect.x + textoPlay->rect.w, textoPlay->rect.y + 20,60,58};
+            yoda->rect = aux11;
+            SDL_RenderCopy(renderer, yoda->textura, NULL, &yoda->rect);
             break;
         }
         case 1: //Botão Recorde
@@ -251,6 +269,11 @@ void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMen
             SDL_Rect aux2 = {textoRecorde->rect.x - 60, textoRecorde->rect.y + 20,48,50};
             alien->rect = aux2;
             SDL_RenderCopy(renderer, alien->textura, NULL, &alien->rect);
+
+            //Baby Yoda
+            SDL_Rect aux22 = {textoRecorde->rect.x  + textoRecorde->rect.w, textoRecorde->rect.y + 20,60,58};
+            yoda->rect = aux22;
+            SDL_RenderCopy(renderer, yoda->textura, NULL, &yoda->rect);
             break;
         }
         case 2: //Botão Creditos
@@ -258,6 +281,11 @@ void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMen
             SDL_Rect aux3 = {textoCredito->rect.x - 60, textoCredito->rect.y + 20,48,50};
             alien->rect = aux3;
             SDL_RenderCopy(renderer, alien->textura, NULL, &alien->rect);
+
+            //Baby Yoda
+            SDL_Rect aux33 = {textoCredito->rect.x  + textoCredito->rect.w, textoCredito->rect.y + 20,60,58};
+            yoda->rect = aux33;
+            SDL_RenderCopy(renderer, yoda->textura, NULL, &yoda->rect);
             break;
         }
 
