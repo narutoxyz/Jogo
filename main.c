@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
     int jogando = 1;
     int escolha = 0; //0-Menu, 1-Jogo, 2-Recorde, 3-Creditos
     int opcaoMenu = 0;//0-Jogar, 1-Recorde, 2-Creditos
+    int tam;
 
     //INICIALIZADORES DO SDL
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -54,7 +55,7 @@ int main(int argc, char *argv[])
 
 	//VARIAVEIS SDL, STRUCTS
 
-    TTF_Font *fonteStarWars = TTF_OpenFont("letras/Starjedi.ttf", 32);
+    TTF_Font *fonteStarWars = TTF_OpenFont("letras/Starjedi.ttf", 52);
     SDL_Color verde = {7,224,71};
 
     Mix_Music *musicaMenu = Mix_LoadMUS("musicas/menu.ogg");
@@ -66,22 +67,25 @@ int main(int argc, char *argv[])
     SDL_Texture *textura;
 
     //Textos
+
     Objeto *textoPlay = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(fonteStarWars, "Jogar", verde);
     textoPlay->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux1 = {250, 150, 395, 182};
+    SDL_Rect aux1 = { (largura - surface->w)/2, (altura - surface->h)/2, surface->w, surface->h};
     textoPlay->rect = aux1;
+
+    tam = surface->h;//Altura do texto
 
     Objeto *textoRecorde = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(fonteStarWars, "Recordes", verde);
     textoRecorde->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux2 = {250, 214, 395, 246};
+    SDL_Rect aux2 = {(largura - surface->w)/2, tam+((altura - surface->h)/2), surface->w, surface->h};
     textoRecorde->rect = aux2;
 
     Objeto *textoCredito = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(fonteStarWars, "Creditos", verde);
     textoCredito->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux3 = {250, 278, 395, 310};
+    SDL_Rect aux3 = {(largura - surface->w)/2, 2*tam+((altura - surface->h)/2), surface->w, surface->h};
     textoCredito->rect = aux3;
 
     //Fundos
@@ -237,21 +241,21 @@ void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMen
     {
         case 0: //Botão Jogar
         {
-            SDL_Rect aux1 = {218,150,64,64};
+            SDL_Rect aux1 = {textoPlay->rect.x - 60, textoPlay->rect.y + 20,48,50};
             alien->rect = aux1;
             SDL_RenderCopy(renderer, alien->textura, NULL, &alien->rect);
             break;
         }
         case 1: //Botão Recorde
         {
-            SDL_Rect aux2 = {218,214,64,64};
+            SDL_Rect aux2 = {textoRecorde->rect.x - 60, textoRecorde->rect.y + 20,48,50};
             alien->rect = aux2;
             SDL_RenderCopy(renderer, alien->textura, NULL, &alien->rect);
             break;
         }
         case 2: //Botão Creditos
         {
-            SDL_Rect aux3 = {218,278,64,64};
+            SDL_Rect aux3 = {textoCredito->rect.x - 60, textoCredito->rect.y + 20,48,50};
             alien->rect = aux3;
             SDL_RenderCopy(renderer, alien->textura, NULL, &alien->rect);
             break;
