@@ -11,7 +11,6 @@
 //SDL_Texture *textura = SDL_CreateTextureFromSurface(renderer, surface);
 //char dir[] = "imagens/spritenave.png";
 //char dir[] = "imagens/inimigos.png";
-//Mix_PlayMusic(musica, -1);
 
 /*---Estruturas---*/
 
@@ -30,21 +29,33 @@ typedef struct jogador
     SDL_Rect *sprite;
 }Jogador;
 
-void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu);
+typedef struct obj
+{
+    SDL_Texture *textura;
+    SDL_Rect rect;
+}Objeto;
+
+void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, int opcao);
 
 int main(int argc, char *argv[])
 {
     //VARIAVEIS SIMPLES
     int largura = 640, altura = 480;
-    int jogando = 1, escolha = 0;
+    int jogando = 1;
+    int escolha = 0; //0-Menu, 1-Jogo, 2-Recorde, 3-Creditos
+    int opcaoMenu = 0;//0-Jogar, 1-Recorde, 2-Creditos
 
     //INICIALIZADORES DO SDL
     SDL_Init(SDL_INIT_EVERYTHING);
-    SDL_Window *janela = SDL_CreateWindow("jogo",50,50, largura, altura,SDL_WINDOW_SHOWN);
+    SDL_Window *janela = SDL_CreateWindow("jogo",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,largura, altura,SDL_WINDOW_SHOWN);
     SDL_Renderer *renderer = SDL_CreateRenderer(janela,-1,0);
     Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2, 4096);
+    TTF_Init();
 
 	//VARIAVEIS SDL, STRUCTS
+
+    TTF_Font *fonteStarWars = TTF_OpenFont("letras/Starjedi.ttf", 32);
+    SDL_Color verde = {7,224,71};
 
     Mix_Music *musicaMenu = Mix_LoadMUS("musicas/menu.ogg");
     Mix_Music *musicaJogo = Mix_LoadMUS("musicas/jogo.ogg");
@@ -54,6 +65,26 @@ int main(int argc, char *argv[])
     SDL_Surface *surface;
     SDL_Texture *textura;
 
+    //Textos
+    Objeto *textoPlay = (Objeto*) malloc(sizeof(Objeto));
+    surface = TTF_RenderText_Solid(fonteStarWars, "Jogar", verde);
+    textoPlay->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect aux1 = {250, 150, 395, 182};
+    textoPlay->rect = aux1;
+
+    Objeto *textoRecorde = (Objeto*) malloc(sizeof(Objeto));
+    surface = TTF_RenderText_Solid(fonteStarWars, "Recordes", verde);
+    textoRecorde->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect aux2 = {250, 214, 395, 246};
+    textoRecorde->rect = aux2;
+
+    Objeto *textoCredito = (Objeto*) malloc(sizeof(Objeto));
+    surface = TTF_RenderText_Solid(fonteStarWars, "Creditos", verde);
+    textoCredito->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect aux3 = {250, 278, 395, 310};
+    textoCredito->rect = aux3;
+
+    //Fundos
     SDL_Texture *menu;
     surface = IMG_Load("imagens/menu.jpeg");
     menu = SDL_CreateTextureFromSurface(renderer, surface);
@@ -67,6 +98,11 @@ int main(int argc, char *argv[])
     surface = IMG_Load("imagens/credito.jpeg");
     credito = SDL_CreateTextureFromSurface(renderer, surface);
 
+    //Imagens alien Toy Story, nave, inimigos
+    Objeto *alien = (Objeto*) malloc(sizeof(Objeto));
+    surface = IMG_Load("imagens/alien.png");
+    alien->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    //alien->rect = {200,150,30,30};
     Jogador *jogador = (Jogador*) malloc(sizeof(Jogador));
     surface = IMG_Load("imagens/nave.png");
     jogador->textura = SDL_CreateTextureFromSurface(renderer, surface);
@@ -97,7 +133,7 @@ int main(int argc, char *argv[])
         {
             case 0://Menu
             {
-                iniciarMenu(renderer, menu, musicaMenu);
+                iniciarMenu(renderer, menu, musicaMenu, textoPlay, textoRecorde, textoCredito, alien, opcaoMenu);
                 break;
             }
             case 1://Jogo
@@ -113,6 +149,7 @@ int main(int argc, char *argv[])
                 break;
             }
         }
+
         while(SDL_PollEvent(&evento) != 0)
         {
             //Fechou a tela
@@ -128,23 +165,44 @@ int main(int argc, char *argv[])
                 {
                     jogando = 0; //Encerre o Game Loop
                 }
-                                /*Movimentação Nave*/
-                // Se a tecla for -> no jogo
-                if(evento.key.keysym.sym == SDLK_UP && escolha == 1)
+                                
+                if(escolha == 0) //Menu
                 {
-                    //mover(UP);
+                            /*Movimentação de Seleção Texto - Menu*/
+                    if(evento.key.keysym.sym == SDLK_UP)
+                    {
+                        if(opcaoMenu-1 >= 0)
+                        {
+                            opcaoMenu = opcaoMenu-1;
+                        }
+                    }
+                    if(evento.key.keysym.sym == SDLK_DOWN)
+                    {
+                        if(opcaoMenu + 1 <=2 )
+                        {
+                            opcaoMenu = opcaoMenu+1;
+                        }
+                    }
                 }
-                if(evento.key.keysym.sym == SDLK_DOWN && escolha == 1)
+                if(escolha == 1) //Jogo
                 {
-                    //mover(DOWN);
-                }
-                if(evento.key.keysym.sym == SDLK_RIGHT && escolha == 1)
-                {
-                    //girar(RIGHT);
-                }
-                if(evento.key.keysym.sym == SDLK_LEFT && escolha == 1)
-                {
-                    //girar(LEFT);
+                                        /*Movimentação Nave - Jogo*/
+                    if(evento.key.keysym.sym == SDLK_UP)
+                    {
+                        //mover(UP);
+                    }
+                    if(evento.key.keysym.sym == SDLK_DOWN)
+                    {
+                        //mover(DOWN);
+                    }
+                    if(evento.key.keysym.sym == SDLK_RIGHT)
+                    {
+                        //girar(RIGHT);
+                    }
+                    if(evento.key.keysym.sym == SDLK_LEFT)
+                    {
+                        //girar(LEFT);
+                    }
                 }
             }
         }
@@ -155,16 +213,51 @@ int main(int argc, char *argv[])
         SDL_Delay(1000/30);
     }
 
+    //Free
+    //TTF_CloseFont(fonteStarWars);
+    //TTF_Quit();
+
 	return 0;
 }
 
 //void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, SDL_Texture *textura, Mix_Music *musicaMenu)
 
-void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu)
+void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, int opcaoMenu)
 {
     if(Mix_PlayingMusic() == 0)
         Mix_PlayMusic(musicaMenu, -1);
 
     SDL_RenderCopy(renderer, menu, NULL, NULL);
+
+    SDL_RenderCopy(renderer, textoPlay->textura, NULL, &textoPlay->rect);
+    SDL_RenderCopy(renderer, textoRecorde->textura, NULL, &textoRecorde->rect);
+    SDL_RenderCopy(renderer, textoCredito->textura, NULL, &textoCredito->rect);
+
+    switch(opcaoMenu)
+    {
+        case 0: //Botão Jogar
+        {
+            SDL_Rect aux1 = {218,150,64,64};
+            alien->rect = aux1;
+            SDL_RenderCopy(renderer, alien->textura, NULL, &alien->rect);
+            break;
+        }
+        case 1: //Botão Recorde
+        {
+            SDL_Rect aux2 = {218,214,64,64};
+            alien->rect = aux2;
+            SDL_RenderCopy(renderer, alien->textura, NULL, &alien->rect);
+            break;
+        }
+        case 2: //Botão Creditos
+        {
+            SDL_Rect aux3 = {218,278,64,64};
+            alien->rect = aux3;
+            SDL_RenderCopy(renderer, alien->textura, NULL, &alien->rect);
+            break;
+        }
+
+    }
+
     return;
 }
