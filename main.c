@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
     surface = IMG_Load("imagens/recorde.jpg");
     recorde = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_Texture *credito;
-    surface = IMG_Load("imagens/credito.jpg");
+    surface = IMG_Load("imagens/credito.jpeg");
     credito = SDL_CreateTextureFromSurface(renderer, surface);
 
     //Imagens alien Toy Story, nave, inimigos

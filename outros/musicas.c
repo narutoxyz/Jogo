@@ -1,0 +1,12 @@
+    Musica musicaMenu = (Musica*) malloc(sizeof(Musica));
+    musicaMenu->tema = 0;
+    musicaMenu->musica = Mix_LoadMUS("musicas/menu.ogg");
+    Musica musicaJogo = (Musica*) malloc(sizeof(Musica));
+    musicaJogo->tema = 1;
+    musicaJogo->musica = Mix_LoadMUS("musicas/jogo.ogg");
+    Musica musicaRecorde = (Musica*) malloc(sizeof(Musica));
+    musicaRecorde->tema = 2;
+    //musicaRecorde->musica = Mix_LoadMUS("musicas/recorde.ogg");
+    Musica musicaCredito = (Musica*) malloc(sizeof(Musica));
+    musicaCredito->tema = 3;
+    //musicaCredito->musica = Mix_LoadMUS("musicas/credito.ogg");
