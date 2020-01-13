@@ -153,14 +153,17 @@ int main(int argc, char *argv[])
             }
             case 1://Jogo
             {
+                //iniciarJogo();
                 break;
             }
             case 2://Recorde
             {
+                //iniciarRecorde();
                 break;
             } 
             case 3://Créditos
             {
+                //iniciarCredito();
                 break;
             }
         }
@@ -180,9 +183,37 @@ int main(int argc, char *argv[])
                 {
                     jogando = 0; //Encerre o Game Loop
                 }
+                // Se a tecla for 0 ...
+                if(evento.key.keysym.sym == SDLK_0)
+                {
+                    escolha = 0; //Volte ao menu
+                }
                                 
                 if(escolha == 0) //Menu
                 {
+                    printf("Estrou no menu.\n");
+                            /*Seleção - Menu*/
+                    if(evento.key.keysym.sym == SDLK_RETURN || evento.key.keysym.sym == SDLK_KP_ENTER)
+                    {
+                        switch(opcaoMenu)
+                        {
+                            case 0: //Jogar
+                            {
+                                escolha = 1;
+                                break;
+                            }
+                            case 1: //Recorde
+                            {
+                                escolha = 2;
+                                break;
+                            }
+                            case 2: //Creditos
+                            {
+                                escolha = 3;
+                                break;
+                            }
+                        }
+                    }
                             /*Movimentação de Seleção Texto - Menu*/
                     if(evento.key.keysym.sym == SDLK_UP)
                     {
@@ -201,23 +232,32 @@ int main(int argc, char *argv[])
                 }
                 if(escolha == 1) //Jogo
                 {
+                    printf("Entrou Jogo.\n");
                                         /*Movimentação Nave - Jogo*/
-                    if(evento.key.keysym.sym == SDLK_UP)
-                    {
-                        //mover(UP);
-                    }
-                    if(evento.key.keysym.sym == SDLK_DOWN)
-                    {
-                        //mover(DOWN);
-                    }
-                    if(evento.key.keysym.sym == SDLK_RIGHT)
-                    {
-                        //girar(RIGHT);
-                    }
-                    if(evento.key.keysym.sym == SDLK_LEFT)
-                    {
-                        //girar(LEFT);
-                    }
+                    // if(evento.key.keysym.sym == SDLK_UP)
+                    // {
+                    //     //mover(UP);
+                    // }
+                    // if(evento.key.keysym.sym == SDLK_DOWN)
+                    // {
+                    //     //mover(DOWN);
+                    // }
+                    // if(evento.key.keysym.sym == SDLK_RIGHT)
+                    // {
+                    //     //girar(RIGHT);
+                    // }
+                    // if(evento.key.keysym.sym == SDLK_LEFT)
+                    // {
+                    //     //girar(LEFT);
+                    // }
+                }
+                if(escolha == 2) //Recorde
+                {
+                    printf("Entrou Recorde.\n");
+                }
+                if(escolha == 3) //Credito
+                {
+                    printf("Entrou Credito.\n");
                 }
             }
         }
@@ -288,7 +328,6 @@ void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMen
             SDL_RenderCopy(renderer, yoda->textura, NULL, &yoda->rect);
             break;
         }
-
     }
 
     return;
