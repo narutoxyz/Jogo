@@ -36,10 +36,10 @@ typedef struct obj
 }Objeto;
 
 //Funções
-void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu);
-void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int musicaAtual);
-void iniciarRecorde(SDL_Renderer *renderer, SDL_Texture *recorde, Mix_Music *musicaRecorde, int musicaAtual);
-void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *musicaCredito, int musicaAtual);
+void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int *musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu);
+void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual);
+void iniciarRecorde(SDL_Renderer *renderer, SDL_Texture *recorde, Mix_Music *musicaRecorde, int *musicaAtual);
+void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *musicaCredito, int *musicaAtual);
 
 int main(int argc, char *argv[])
 {
@@ -49,6 +49,9 @@ int main(int argc, char *argv[])
     int escolha = 0; //0-Menu, 1-Jogo, 2-Recorde, 3-Creditos
     int opcaoMenu = 0;//0-Jogar, 1-Recorde, 2-Creditos
     int tam;
+
+    int *musicaAtual = (int*) malloc(sizeof(int));
+    *musicaAtual = 0;
 
     //INICIALIZADORES DO SDL
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -156,22 +159,22 @@ int main(int argc, char *argv[])
         {
             case 0://Menu
             {
-                iniciarMenu(renderer, menu, musicaMenu, escolha, textoTitulo, textoPlay, textoRecorde, textoCredito, alien, yoda, opcaoMenu);
+                iniciarMenu(renderer, menu, musicaMenu, musicaAtual, textoTitulo, textoPlay, textoRecorde, textoCredito, alien, yoda, opcaoMenu);
                 break;
             }
             case 1://Jogo
             {
-                iniciarJogo(renderer, jogo, musicaJogo, escolha);
+                iniciarJogo(renderer, jogo, musicaJogo, musicaAtual);
                 break;
             }
             case 2://Recorde
             {
-                iniciarRecorde(renderer, recorde, musicaRecorde, escolha);
+                iniciarRecorde(renderer, recorde, musicaRecorde, musicaAtual);
                 break;
             } 
             case 3://Créditos
             {
-                iniciarCredito(renderer, credito, musicaCredito, escolha);
+                iniciarCredito(renderer, credito, musicaCredito, musicaAtual);
                 break;
             }
         }
@@ -286,7 +289,7 @@ int main(int argc, char *argv[])
 
 //void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, SDL_Texture *textura, Mix_Music *musicaMenu)
 
-void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu)
+void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int *musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu)
 {
     if(Mix_PlayingMusic() == 0) //Se não estiver tocando música ...
     {
@@ -294,7 +297,7 @@ void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMen
     }
     else // Se estiver tocando musica ...
     {
-        if(musicaAtual != 0) // Se não for a do menu
+        if(*musicaAtual != 0) // Se não for a do menu
         {
             Mix_PlayMusic(musicaMenu, -1); //Toque a musica do menu
         }
@@ -348,35 +351,43 @@ void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMen
         }
     }
 
+    *musicaAtual = 0;
+
     return;
 }
 
-void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int musicaAtual)
+void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual)
 {
-    if(musicaAtual != 1)
+    if(*musicaAtual != 1)
     {
         Mix_PlayMusic(musicaJogo, -1);
     }
 
     SDL_RenderCopy(renderer, jogo, NULL, NULL);
+
+    *musicaAtual = 1;
 }
 
-void iniciarRecorde(SDL_Renderer *renderer, SDL_Texture *recorde, Mix_Music *musicaRecorde, int musicaAtual)
+void iniciarRecorde(SDL_Renderer *renderer, SDL_Texture *recorde, Mix_Music *musicaRecorde, int *musicaAtual)
 {
-    if(musicaAtual != 2)
+    if(*musicaAtual != 2)
     {
         Mix_PlayMusic(musicaRecorde, -1);
     }
 
     SDL_RenderCopy(renderer, recorde, NULL, NULL);
+
+    *musicaAtual = 2;
 }
 
-void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *musicaCredito, int musicaAtual)
+void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *musicaCredito, int *musicaAtual)
 {
-    if(musicaAtual != 3)
+    if(*musicaAtual != 3)
     {
         Mix_PlayMusic(musicaCredito, -1);
     }
 
     SDL_RenderCopy(renderer, credito, NULL, NULL);
+
+    *musicaAtual = 3;
 }
