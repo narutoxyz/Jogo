@@ -35,7 +35,11 @@ typedef struct obj
     SDL_Rect rect;
 }Objeto;
 
-void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu);
+//Funções
+void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu);
+void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int musicaAtual);
+void iniciarRecorde(SDL_Renderer *renderer, SDL_Texture *recorde, Mix_Music *musicaRecorde, int musicaAtual);
+void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *musicaCredito, int musicaAtual);
 
 int main(int argc, char *argv[])
 {
@@ -61,13 +65,17 @@ int main(int argc, char *argv[])
     SDL_Color verde = {7,224,71};
     SDL_Color amarelo = {233, 225, 0};
 
+    //Musicas
+
     Mix_Music *musicaMenu = Mix_LoadMUS("musicas/menu.ogg");
     Mix_Music *musicaJogo = Mix_LoadMUS("musicas/jogo.ogg");
+    Mix_Music *musicaRecorde = Mix_LoadMUS("musicas/recorde.ogg");
+    Mix_Music *musicaCredito = Mix_LoadMUS("musicas/credito.ogg");
 
     SDL_Event evento;
 
     SDL_Surface *surface;
-    SDL_Texture *textura;
+    //SDL_Texture *textura;
 
     //Textos
 
@@ -102,13 +110,13 @@ int main(int argc, char *argv[])
     surface = IMG_Load("imagens/menu.jpg");
     menu = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_Texture *jogo;
-    surface = IMG_Load("imagens/jogo.jpeg");
+    surface = IMG_Load("imagens/jogo.jpg");
     jogo = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_Texture *recorde;
     surface = IMG_Load("imagens/recorde.jpg");
     recorde = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_Texture *credito;
-    surface = IMG_Load("imagens/credito.jpeg");
+    surface = IMG_Load("imagens/credito.jpg");
     credito = SDL_CreateTextureFromSurface(renderer, surface);
 
     //Imagens alien Toy Story, nave, inimigos
@@ -148,22 +156,22 @@ int main(int argc, char *argv[])
         {
             case 0://Menu
             {
-                iniciarMenu(renderer, menu, musicaMenu, textoTitulo, textoPlay, textoRecorde, textoCredito, alien, yoda, opcaoMenu);
+                iniciarMenu(renderer, menu, musicaMenu, escolha, textoTitulo, textoPlay, textoRecorde, textoCredito, alien, yoda, opcaoMenu);
                 break;
             }
             case 1://Jogo
             {
-                //iniciarJogo();
+                iniciarJogo(renderer, jogo, musicaJogo, escolha);
                 break;
             }
             case 2://Recorde
             {
-                //iniciarRecorde();
+                iniciarRecorde(renderer, recorde, musicaRecorde, escolha);
                 break;
             } 
             case 3://Créditos
             {
-                //iniciarCredito();
+                iniciarCredito(renderer, credito, musicaCredito, escolha);
                 break;
             }
         }
@@ -233,6 +241,7 @@ int main(int argc, char *argv[])
                 if(escolha == 1) //Jogo
                 {
                     printf("Entrou Jogo.\n");
+
                                         /*Movimentação Nave - Jogo*/
                     // if(evento.key.keysym.sym == SDLK_UP)
                     // {
@@ -277,10 +286,19 @@ int main(int argc, char *argv[])
 
 //void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, SDL_Texture *textura, Mix_Music *musicaMenu)
 
-void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu)
+void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu)
 {
-    if(Mix_PlayingMusic() == 0)
-        Mix_PlayMusic(musicaMenu, -1);
+    if(Mix_PlayingMusic() == 0) //Se não estiver tocando música ...
+    {
+        Mix_PlayMusic(musicaMenu, -1); //Toque a musica do menu
+    }
+    else // Se estiver tocando musica ...
+    {
+        if(musicaAtual != 0) // Se não for a do menu
+        {
+            Mix_PlayMusic(musicaMenu, -1); //Toque a musica do menu
+        }
+    }
 
     SDL_RenderCopy(renderer, menu, NULL, NULL);
 
@@ -331,4 +349,34 @@ void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMen
     }
 
     return;
+}
+
+void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int musicaAtual)
+{
+    if(musicaAtual != 1)
+    {
+        Mix_PlayMusic(musicaJogo, -1);
+    }
+
+    SDL_RenderCopy(renderer, jogo, NULL, NULL);
+}
+
+void iniciarRecorde(SDL_Renderer *renderer, SDL_Texture *recorde, Mix_Music *musicaRecorde, int musicaAtual)
+{
+    if(musicaAtual != 2)
+    {
+        Mix_PlayMusic(musicaRecorde, -1);
+    }
+
+    SDL_RenderCopy(renderer, recorde, NULL, NULL);
+}
+
+void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *musicaCredito, int musicaAtual)
+{
+    if(musicaAtual != 3)
+    {
+        Mix_PlayMusic(musicaCredito, -1);
+    }
+
+    SDL_RenderCopy(renderer, credito, NULL, NULL);
 }
