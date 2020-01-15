@@ -52,22 +52,23 @@ o x e y do rect na direção da angulação da nave.
 
 /*---Estruturas---*/
 
-typedef struct inimigo
+// typedef struct inimigo
+// {
+//     int numInimigos; // 3 inimigos
+//     SDL_Texture *textura;
+//     SDL_Rect *rect;
+// }Inimigo;
+
+
+//Numero de inimigos falta.
+typedef struct inimigo Inimigos;
+struct inimigo
 {
-    int numInimigos; // 3 inimigos
-    SDL_Texture *textura;
-    SDL_Rect *rect;
-}Inimigo;
-
-
-// typedef struct inimigo{
-//    Int tipo; //pra sabe qual é 0 - 1 -2
-//    textura
-//    textura
-//    textura
-//    Sdl Rect; // posicao dele 0 - 1 - 2
-//    ListInimigo *prox
-// }
+   int tipo; //pra sabe qual é 0 - 1 -2
+   SDL_Texture *textura;
+   SDL_Rect rect[3]; // posicao dele 0 - 1 - 2
+   Inimigos *prox;
+};
 
 typedef struct jogador
 {
@@ -88,9 +89,25 @@ typedef struct obj
     SDL_Rect rect;
 }Objeto;
 
+typedef struct tiro Tiro;
+struct tiro
+{
+    SDL_Texture *textura;
+    SDL_Rect rect;
+    Tiro *prox;
+};
+
+typedef struct borda
+{
+    int superior;
+    int inferior;
+    int direita;
+    int esquerda;
+}Borda;
+
 //Funções
 void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int *musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu);
-void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual, Jogador* jogador);
+void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual, Jogador* jogador, Objeto *vida, Objeto *textoPontuacao, TTF_Font *fontePontuacao, SDL_Color branco);
 void iniciarRecorde(SDL_Renderer *renderer, SDL_Texture *recorde, Mix_Music *musicaRecorde, int *musicaAtual);
 void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *musicaCredito, int *musicaAtual);
 
@@ -106,6 +123,7 @@ int main(int argc, char *argv[])
     int escolha = 0; //0-Menu, 1-Jogo, 2-Recorde, 3-Creditos
     int opcaoMenu = 0;//0-Jogar, 1-Recorde, 2-Creditos
     int tam;
+    int atirou = 0;
 
     int *musicaAtual = (int*) malloc(sizeof(int));
     *musicaAtual = 0;
@@ -117,13 +135,18 @@ int main(int argc, char *argv[])
     Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2, 4096);
     TTF_Init();
 
-	//VARIAVEIS SDL, STRUCTS
+	//VARIAVEIS SDL
 
     TTF_Font *fonteStarWars = TTF_OpenFont("letras/Starjedi.ttf", 52);
     TTF_Font *titulo = TTF_OpenFont("letras/Starjout.ttf", 60);
+    TTF_Font *fontePontuacao = TTF_OpenFont("letras/Robotica.ttf", 48);
 
     SDL_Color verde = {7,224,71};
-    SDL_Color amarelo = {233, 225, 0};
+    SDL_Color amarelo = {233,225,0};
+    SDL_Color branco = {255,255,255};
+
+    SDL_Event evento;
+    SDL_Surface *surface;
 
     //Musicas
 
@@ -131,11 +154,6 @@ int main(int argc, char *argv[])
     Mix_Music *musicaJogo = Mix_LoadMUS("musicas/jogo.ogg");
     Mix_Music *musicaRecorde = Mix_LoadMUS("musicas/recorde.ogg");
     Mix_Music *musicaCredito = Mix_LoadMUS("musicas/credito.ogg");
-
-    SDL_Event evento;
-
-    SDL_Surface *surface;
-    //SDL_Texture *textura;
 
     //Textos
 
@@ -165,6 +183,19 @@ int main(int argc, char *argv[])
     SDL_Rect aux4 = {(largura - surface->w)/2, 0, surface->w, surface->h};
     textoTitulo->rect = aux4;
 
+    Objeto *textoPontuacao = (Objeto*) malloc(sizeof(Objeto));
+    SDL_Rect aux5 = {(largura - 50)/2, 0, 50, surface->h/2};
+    textoPontuacao->rect = aux5;
+
+    int bordaSuperior = surface->h;
+
+    //Structs
+    Borda *bordasJogo = (Borda*) malloc(sizeof(Borda));
+    bordasJogo->superior = bordaSuperior;
+    bordasJogo->inferior = altura;
+    bordasJogo->direita = largura;
+    bordasJogo->esquerda = 0;
+
     //Fundos
     SDL_Texture *menu;
     surface = IMG_Load("imagens/menu.jpg");
@@ -179,19 +210,26 @@ int main(int argc, char *argv[])
     surface = IMG_Load("imagens/credito.jpg");
     credito = SDL_CreateTextureFromSurface(renderer, surface);
 
-    //Imagens alien Toy Story, nave, inimigos
+    //Imagens Gerais
     Objeto *alien = (Objeto*) malloc(sizeof(Objeto));
     surface = IMG_Load("imagens/alien.png");
     alien->textura = SDL_CreateTextureFromSurface(renderer, surface);
     Objeto *yoda = (Objeto*) malloc(sizeof(Objeto));
     surface = IMG_Load("imagens/babyyoda.png");
     yoda->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    Objeto *vida = (Objeto*) malloc(sizeof(Objeto));
+    surface = IMG_Load("imagens/vida.png");
+    vida->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    Tiro *tiros = (Tiro*) malloc(sizeof(Tiro));
+    surface = IMG_Load("imagens/tiro.png");
+    tiros->textura = SDL_CreateTextureFromSurface(renderer, surface);
+
 
     Jogador *jogador = (Jogador*) malloc(sizeof(Jogador));
     surface = IMG_Load("imagens/nave.png");
     jogador->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux5 = {(largura - 46)/2, (altura - 80)/2, 46, 80}; //Ajeita o tamanho
-    jogador->rect = aux5;
+    SDL_Rect aux6 = {(largura - 46)/2, (altura - 80)/2, 46, 80}; //Ajeita o tamanho
+    jogador->rect = aux6;
     jogador->vida = 3;
     jogador->pontuacao = 0;
     jogador->angulo = 0.0f;
@@ -199,11 +237,11 @@ int main(int argc, char *argv[])
     jogador->cooldown = 2000;
     jogador->nome = (char*) malloc(sizeof(char)*30);
 
-    Inimigo *inimigo = (Inimigo*) malloc(sizeof(Inimigo));
-    surface = IMG_Load("imagens/inimigos.png");
-    inimigo->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    inimigo->numInimigos = 3;
-    inimigo->rect = (SDL_Rect*) malloc(sizeof(SDL_Rect)*3);
+    // Inimigo *inimigo = (Inimigo*) malloc(sizeof(Inimigo));
+    // surface = IMG_Load("imagens/inimigos.png");
+    // inimigo->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    // inimigo->numInimigos = 3;
+    // inimigo->rect = (SDL_Rect*) malloc(sizeof(SDL_Rect)*3);
     
     
 
@@ -228,8 +266,14 @@ int main(int argc, char *argv[])
             }
             case 1://Jogo
             {
-                iniciarJogo(renderer, jogo, musicaJogo, musicaAtual, jogador);
+                iniciarJogo(renderer, jogo, musicaJogo, musicaAtual, jogador, vida, textoPontuacao, fontePontuacao, branco);
                 moverNave(renderer, jogador);
+                if(atirou == 1)
+                {
+                    //atirar(jogador, Tiro *tiros);
+                    atirou = 0;
+                }
+                
                 break;
             }
             case 2://Recorde
@@ -328,10 +372,10 @@ int main(int argc, char *argv[])
                     {
                         jogador->direcao = 2;
                     }
-                    // if(evento.key.keysym.sym == SDLK_BACKSPACE)
-                    // {
-                    //     atirar();
-                    // }
+                    if(evento.key.keysym.sym == SDLK_BACKSPACE)
+                    {
+                        atirou = 1;
+                    }
                 }
                 if(escolha == 2) //Recorde
                 {
@@ -425,9 +469,15 @@ void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMen
 
     return;
 }
-
-void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual, Jogador* jogador)
+    
+void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual, Jogador* jogador, Objeto *vida, Objeto *textoPontuacao, TTF_Font *fontePontuacao, SDL_Color branco)
 {
+    int i;
+    int espaco = 58;
+    char pontuacao[20];
+    SDL_Surface *surface;
+
+
     SDL_RenderCopy(renderer, jogo, NULL, NULL);
 
     //Significa que não estava no jogo
@@ -436,6 +486,22 @@ void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJog
         SDL_RenderCopy(renderer, jogador->textura, NULL, &jogador->rect);
         Mix_PlayMusic(musicaJogo, -1);
     }
+
+    SDL_Rect aux = {0,0,48,textoPontuacao->rect.h};
+    vida->rect = aux;
+
+    for(i = 0; i < jogador->vida; i++)
+    {
+        vida->rect.x += i*espaco;
+        SDL_RenderCopy(renderer, vida->textura, NULL, &vida->rect);
+        vida->rect = aux;
+    }
+
+    sprintf(pontuacao, "%d", jogador->pontuacao);
+
+    surface = TTF_RenderText_Solid(fontePontuacao, pontuacao, branco);
+    textoPontuacao->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_RenderCopy(renderer, textoPontuacao->textura, NULL, &textoPontuacao->rect);
 
     *musicaAtual = 1;
 }
@@ -546,3 +612,23 @@ void resetJogo(Jogador *jogador)
     SDL_Rect aux = {(largura - 46)/2, (altura - 80)/2, 46, 80};
     jogador->rect = aux;
 }
+
+// void atirar(Jogador *jogador, Tiro *tiros)
+// {
+//     Tiro *tiro;
+//     for(tiro = tiros; p != NULL; p = p->prox)
+//     {
+//         if()
+//     }
+//     Tiro *tiro = 
+    
+
+// }
+
+/* LISTA
+void imprime (celula *le) {
+   celula *p;
+   for (p = le; p != NULL; p = p->prox)
+      printf ("%d\n", p->conteudo);
+}
+*/
