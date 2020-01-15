@@ -1,16 +1,54 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_ttf.h>
 
+#define PI 3.14159265358979323846264338327950288
+#define largura 640
+#define altura 480
+
 //SDL_Rect sRect = {xTextura, yTextura, larguraFigura, alturaFigura};
 //SDL_Rect dRect = {xRenderer, yRenderer, larguraFigura, alturaFigura};
 //SDL_Surface *surface = IMG_Load("imagens/recorde.jpg");
 //SDL_Texture *textura = SDL_CreateTextureFromSurface(renderer, surface);
-//char dir[] = "imagens/spritenave.png";
+//char dir[] = "imagens/rectnave.png";
 //char dir[] = "imagens/inimigos.png";
+
+/*Ideias - Jogo*/
+/*
+Nave:
+-Move-se com as setas: ><, fazem a nave girar, enquanto ^ movimenta ela até parar por conta do atrito.
+-Essa parte de ir parando ainda não tenho ideia.
+-A parte de girar será feita com o RenderCopyEX.
+-A movimentação ^ será feita incrementando/decrementando dependendo da angulação que está a nave.
+-O tiro tem uma variável cooldown da nave.
+
+Inimigos:
+-Surgimento: Escolher aleatoriamente um dos lados e depois uma posição naquele lado e para mover vai ir incrementando/decremen
+tando o x,y do rect do inimigo.
+-rect: Podemos ao mover, mudar a angulação deles de maneira constante.
+-Uma variavel para controlar a quantidade de inimigos
+    if(NumInimigos < 3)
+    {
+        Chama outro inimigo
+    }
+    else
+    {
+        for(i < 3)
+        {
+            mover inimigos.
+        }
+    }
+
+Tiro:
+-Tempo: Definir uma variável cooldown, onde a cada iteração do loop ela é decrementada e quando chegar a 0. Você pode atirar
+novamente, quando atirou ela reseta para 2000(ex).
+-Animação: O tiro precisa sair da frente da nave ao apertar a barra de espaço, para se movimentar, incrementamos/decrementamos
+o x e y do rect na direção da angulação da nave.
+*/
 
 /*---Estruturas---*/
 
@@ -18,15 +56,30 @@ typedef struct inimigo
 {
     int numInimigos; // 3 inimigos
     SDL_Texture *textura;
-    SDL_Rect *sprite;
+    SDL_Rect *rect;
 }Inimigo;
+
+
+// typedef struct inimigo{
+//    Int tipo; //pra sabe qual é 0 - 1 -2
+//    textura
+//    textura
+//    textura
+//    Sdl Rect; // posicao dele 0 - 1 - 2
+//    ListInimigo *prox
+// }
 
 typedef struct jogador
 {
     int vida; // 3 vidas
+    int pontuacao; // pontuação que aparece no jogo
+    int direcao; //0-Cima; 1-Direita; 2-Esquerda
+    int velocidade;
+    int cooldown;
+    float angulo;
     char *nome;
     SDL_Texture *textura;
-    SDL_Rect *sprite;
+    SDL_Rect rect;
 }Jogador;
 
 typedef struct obj
@@ -37,14 +90,18 @@ typedef struct obj
 
 //Funções
 void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int *musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu);
-void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual);
+void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual, Jogador* jogador);
 void iniciarRecorde(SDL_Renderer *renderer, SDL_Texture *recorde, Mix_Music *musicaRecorde, int *musicaAtual);
 void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *musicaCredito, int *musicaAtual);
+
+void moverNave(SDL_Renderer *renderer, Jogador *jogador);
+void resetJogo(Jogador *jogador);
+
+float angleToRad(float angulo);
 
 int main(int argc, char *argv[])
 {
     //VARIAVEIS SIMPLES
-    int largura = 640, altura = 480;
     int jogando = 1;
     int escolha = 0; //0-Menu, 1-Jogo, 2-Recorde, 3-Creditos
     int opcaoMenu = 0;//0-Jogar, 1-Recorde, 2-Creditos
@@ -85,7 +142,7 @@ int main(int argc, char *argv[])
     Objeto *textoPlay = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(fonteStarWars, "Jogar", verde);
     textoPlay->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux1 = { (largura - surface->w)/2, (altura - surface->h)/2, surface->w, surface->h};
+    SDL_Rect aux1 = {(largura - surface->w)/2, (altura - surface->h)/2, surface->w, surface->h};
     textoPlay->rect = aux1;
 
     tam = surface->h;//Altura do texto
@@ -119,7 +176,7 @@ int main(int argc, char *argv[])
     surface = IMG_Load("imagens/recorde.jpg");
     recorde = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_Texture *credito;
-    surface = IMG_Load("imagens/credito.jpeg");
+    surface = IMG_Load("imagens/credito.jpg");
     credito = SDL_CreateTextureFromSurface(renderer, surface);
 
     //Imagens alien Toy Story, nave, inimigos
@@ -129,25 +186,32 @@ int main(int argc, char *argv[])
     Objeto *yoda = (Objeto*) malloc(sizeof(Objeto));
     surface = IMG_Load("imagens/babyyoda.png");
     yoda->textura = SDL_CreateTextureFromSurface(renderer, surface);
+
     Jogador *jogador = (Jogador*) malloc(sizeof(Jogador));
     surface = IMG_Load("imagens/nave.png");
     jogador->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect aux5 = {(largura - 46)/2, (altura - 80)/2, 46, 80}; //Ajeita o tamanho
+    jogador->rect = aux5;
+    jogador->vida = 3;
+    jogador->pontuacao = 0;
+    jogador->angulo = 0.0f;
+    jogador->velocidade = 5;
+    jogador->cooldown = 2000;
+    jogador->nome = (char*) malloc(sizeof(char)*30);
+
     Inimigo *inimigo = (Inimigo*) malloc(sizeof(Inimigo));
     surface = IMG_Load("imagens/inimigos.png");
     inimigo->textura = SDL_CreateTextureFromSurface(renderer, surface);
-
-    jogador->vida = 3;
-    jogador->nome = (char*) malloc(sizeof(char)*30);
     inimigo->numInimigos = 3;
-
-    jogador->sprite = (SDL_Rect*) malloc(sizeof(SDL_Rect)*20);
-    inimigo->sprite = (SDL_Rect*) malloc(sizeof(SDL_Rect)*4);
+    inimigo->rect = (SDL_Rect*) malloc(sizeof(SDL_Rect)*3);
+    
+    
 
     //SDL_Rect aux = {0,0,159,94};
-    //jogador->sprite[0] = aux;//Cima
+    //jogador->rect[0] = aux;//Cima
 
     //SDL_Rect aux = {0,0,467,474};
-    //inimigo->sprite[0] = aux;
+    //inimigo->rect[0] = aux;
 
     //textura = menu;
 
@@ -164,7 +228,8 @@ int main(int argc, char *argv[])
             }
             case 1://Jogo
             {
-                iniciarJogo(renderer, jogo, musicaJogo, musicaAtual);
+                iniciarJogo(renderer, jogo, musicaJogo, musicaAtual, jogador);
+                moverNave(renderer, jogador);
                 break;
             }
             case 2://Recorde
@@ -197,6 +262,10 @@ int main(int argc, char *argv[])
                 // Se a tecla for 0 ...
                 if(evento.key.keysym.sym == SDLK_0)
                 {
+                    if(escolha == 1) //Se eu estava no jogo, então eu preciso resetar as variáveis.
+                    {
+                        resetJogo(jogador);
+                    }
                     escolha = 0; //Volte ao menu
                 }
                                 
@@ -246,21 +315,22 @@ int main(int argc, char *argv[])
                     printf("Entrou Jogo.\n");
 
                                         /*Movimentação Nave - Jogo*/
-                    // if(evento.key.keysym.sym == SDLK_UP)
+                    //Alterar a direção e o rect usando uma função então precisa de uma variavel direção
+                    if(evento.key.keysym.sym == SDLK_UP)
+                    {
+                        jogador->direcao = 0;
+                    }
+                    if(evento.key.keysym.sym == SDLK_RIGHT)
+                    {
+                        jogador->direcao = 1;
+                    }
+                    if(evento.key.keysym.sym == SDLK_LEFT)
+                    {
+                        jogador->direcao = 2;
+                    }
+                    // if(evento.key.keysym.sym == SDLK_BACKSPACE)
                     // {
-                    //     //mover(UP);
-                    // }
-                    // if(evento.key.keysym.sym == SDLK_DOWN)
-                    // {
-                    //     //mover(DOWN);
-                    // }
-                    // if(evento.key.keysym.sym == SDLK_RIGHT)
-                    // {
-                    //     //girar(RIGHT);
-                    // }
-                    // if(evento.key.keysym.sym == SDLK_LEFT)
-                    // {
-                    //     //girar(LEFT);
+                    //     atirar();
                     // }
                 }
                 if(escolha == 2) //Recorde
@@ -356,14 +426,16 @@ void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMen
     return;
 }
 
-void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual)
+void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual, Jogador* jogador)
 {
+    SDL_RenderCopy(renderer, jogo, NULL, NULL);
+
+    //Significa que não estava no jogo
     if(*musicaAtual != 1)
     {
+        SDL_RenderCopy(renderer, jogador->textura, NULL, &jogador->rect);
         Mix_PlayMusic(musicaJogo, -1);
     }
-
-    SDL_RenderCopy(renderer, jogo, NULL, NULL);
 
     *musicaAtual = 1;
 }
@@ -390,4 +462,87 @@ void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *mus
     SDL_RenderCopy(renderer, credito, NULL, NULL);
 
     *musicaAtual = 3;
+}
+
+//Altera os valores do rect
+void moverNave(SDL_Renderer *renderer, Jogador *jogador)
+{
+    float angulo = 5.0f;
+    float radiano;
+
+    switch(jogador->direcao)
+    {
+        case 0: //Ir para cima
+        {
+            radiano = angleToRad(jogador->angulo);
+            if((jogador->angulo >= 0 && jogador->angulo <=90))
+            {
+                if(jogador->angulo == 0)
+                    jogador->rect.y -= jogador->velocidade;
+                else if(jogador->angulo == 90)
+                    jogador->rect.x += jogador->velocidade;
+                else //1º quadrante
+                {
+                    jogador->rect.x += sin(radiano) * jogador->velocidade;
+                    jogador->rect.y -= cos(radiano) * jogador->velocidade;
+                }
+            }
+            else if(jogador->angulo > 90 && jogador->angulo <= 180)
+            {
+                if(jogador->angulo == 180)
+                    jogador->rect.y += jogador->velocidade;
+                else//2º quadrante
+                {
+                    jogador->rect.x += sin(radiano) * jogador->velocidade;
+                    jogador->rect.y -= cos(radiano) * jogador->velocidade;
+                }
+            }
+            else if(jogador->angulo > 180 && jogador->angulo <= 270)
+            {
+                if(jogador->angulo == 270)
+                    jogador->rect.x -= jogador->velocidade;
+                else//3º quadrante
+                {
+                    jogador->rect.x += sin(radiano) * jogador->velocidade;
+                    jogador->rect.y -= cos(radiano) * jogador->velocidade;
+                }
+            }
+            else //(angulo > 270 && angulo < 360) //4º quadrante
+            {
+                jogador->rect.x += sin(radiano) * jogador->velocidade;
+                jogador->rect.y -= cos(radiano) * jogador->velocidade;
+            }
+            
+            break;
+        }
+        case 1: //Ir para direita
+        {
+            jogador->angulo = (int)(jogador->angulo + angulo)%360;
+            printf("Angulo D %.2f\n", jogador->angulo);
+            break;
+        }
+        case 2: //Ir para esquerda
+        {
+            jogador->angulo = (int)((jogador->angulo - angulo)+360) % 360;
+            printf("Angulo E %.2f\n", jogador->angulo);
+            break;
+        }
+    }
+    jogador->direcao = 4;
+
+    SDL_RenderCopyEx(renderer, jogador->textura, NULL, &jogador->rect, jogador->angulo, NULL, SDL_FLIP_NONE);
+}
+
+float angleToRad(float angulo)
+{
+    return angulo*(PI/180.0f);
+}
+
+void resetJogo(Jogador *jogador)
+{
+    jogador->vida = 3;
+    jogador->pontuacao = 0;
+    jogador->angulo = 0.0f;
+    SDL_Rect aux = {(largura - 46)/2, (altura - 80)/2, 46, 80};
+    jogador->rect = aux;
 }
