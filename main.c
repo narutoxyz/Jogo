@@ -113,11 +113,12 @@ typedef struct borda
 
 //Funções
 void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int *musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu);
-void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual, Jogador* jogador, Objeto *vida, Objeto *textoPontuacao, TTF_Font *fontePontuacao, SDL_Color branco);
+void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual, Jogador* jogador);
 void iniciarRecorde(SDL_Renderer *renderer, SDL_Texture *recorde, Mix_Music *musicaRecorde, int *musicaAtual);
 void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *musicaCredito, int *musicaAtual);
 
 //Funções - Jogo
+void mostrarInfoJogo(SDL_Renderer *renderer, Jogador *jogador, Objeto *vida, Objeto *textoPontuacao, TTF_Font *fontePontuacao, SDL_Color branco);
 void moverNave(SDL_Renderer *renderer, Jogador *jogador);
 Tiro* atirar(Jogador *jogador, Tiro *tiros, SDL_Texture *texturaTiro);
 Tiro* moverTiros(SDL_Renderer *renderer, Tiro *tiros, Borda *bordasJogo);
@@ -281,7 +282,7 @@ int main(int argc, char *argv[])
             }
             case 1://Jogo
             {
-                iniciarJogo(renderer, jogo, musicaJogo, musicaAtual, jogador, vida, textoPontuacao, fontePontuacao, branco);
+                iniciarJogo(renderer, jogo, musicaJogo, musicaAtual, jogador);
                 moverNave(renderer, jogador);
                 if(atirou == 1 && jogador->cooldown == 0)
                 {
@@ -293,7 +294,9 @@ int main(int argc, char *argv[])
 
                 if(jogador->cooldown > 0)
                     jogador->cooldown--;
-                
+
+                mostrarInfoJogo(renderer, jogador, vida, textoPontuacao, fontePontuacao, branco);
+
                 break;
             }
             case 2://Recorde
@@ -492,38 +495,17 @@ void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMen
     return;
 }
     
-void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual, Jogador* jogador, Objeto *vida, Objeto *textoPontuacao, TTF_Font *fontePontuacao, SDL_Color branco)
+void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual, Jogador* jogador)
 {
-    int i;
-    int espaco = 58;
-    char pontuacao[20];
-    SDL_Surface *surface;
-
-
+    
     SDL_RenderCopy(renderer, jogo, NULL, NULL);
 
     //Significa que não estava no jogo
     if(*musicaAtual != 1)
     {
-        SDL_RenderCopy(renderer, jogador->textura, NULL, &jogador->rect);
+        //SDL_RenderCopy(renderer, jogador->textura, NULL, &jogador->rect);
         Mix_PlayMusic(musicaJogo, -1);
     }
-
-    SDL_Rect aux = {0,0,48,textoPontuacao->rect.h};
-    vida->rect = aux;
-
-    for(i = 0; i < jogador->vida; i++)
-    {
-        vida->rect.x += i*espaco;
-        SDL_RenderCopy(renderer, vida->textura, NULL, &vida->rect);
-        vida->rect = aux;
-    }
-
-    sprintf(pontuacao, "%d", jogador->pontuacao);
-
-    surface = TTF_RenderText_Solid(fontePontuacao, pontuacao, branco);
-    textoPontuacao->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_RenderCopy(renderer, textoPontuacao->textura, NULL, &textoPontuacao->rect);
 
     *musicaAtual = 1;
 }
@@ -629,6 +611,7 @@ float angleToRad(float angulo)
     return angulo*(PI/180.0f);
 }
 
+//Precisa melhorar ...
 void resetJogo(Jogador *jogador)
 {
     jogador->vida = 3;
@@ -735,14 +718,36 @@ Tiro* moverTiros(SDL_Renderer *renderer, Tiro *tiros, Borda *bordasJogo)
     }
 
     //Imprime os tiros na tela
-    int i;
-    for(i = 0, lst = tiros; lst != NULL; lst = lst->prox, i++)
+    for(lst = tiros; lst != NULL; lst = lst->prox)
     {
         lst->rect.x += lst->dx*2;
         lst->rect.y += lst->dy*2;
         SDL_RenderCopyEx(renderer, lst->textura, NULL, &lst->rect, lst->angulo, NULL, SDL_FLIP_NONE);
     }
-    printf("Nº de Tiros - %d\n", i);
 
     return tiros;
+}
+
+void mostrarInfoJogo(SDL_Renderer *renderer, Jogador *jogador, Objeto *vida, Objeto *textoPontuacao, TTF_Font *fontePontuacao, SDL_Color branco)
+{
+    int i;
+    int espaco = 58;
+    char pontuacao[20];
+    SDL_Surface *surface;
+
+    SDL_Rect aux = {0,0,48,textoPontuacao->rect.h};
+    vida->rect = aux;
+
+    for(i = 0; i < jogador->vida; i++)
+    {
+        vida->rect.x += i*espaco;
+        SDL_RenderCopy(renderer, vida->textura, NULL, &vida->rect);
+        vida->rect = aux;
+    }
+
+    sprintf(pontuacao, "%d", jogador->pontuacao);
+
+    surface = TTF_RenderText_Solid(fontePontuacao, pontuacao, branco);
+    textoPontuacao->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_RenderCopy(renderer, textoPontuacao->textura, NULL, &textoPontuacao->rect);
 }
