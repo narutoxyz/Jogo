@@ -77,6 +77,8 @@ typedef struct jogador
     int direcao; //0-Cima; 1-Direita; 2-Esquerda
     int velocidade;
     int cooldown;
+    int dx;
+    int dy;
     float angulo;
     char *nome;
     SDL_Texture *textura;
@@ -92,6 +94,10 @@ typedef struct obj
 typedef struct tiro Tiro;
 struct tiro
 {
+    int visivel;
+    int dx;
+    int dy;
+    int angulo;
     SDL_Texture *textura;
     SDL_Rect rect;
     Tiro *prox;
@@ -111,9 +117,13 @@ void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJog
 void iniciarRecorde(SDL_Renderer *renderer, SDL_Texture *recorde, Mix_Music *musicaRecorde, int *musicaAtual);
 void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *musicaCredito, int *musicaAtual);
 
+//Funções - Jogo
 void moverNave(SDL_Renderer *renderer, Jogador *jogador);
+Tiro* atirar(Jogador *jogador, Tiro *tiros, SDL_Texture *texturaTiro);
+Tiro* moverTiros(SDL_Renderer *renderer, Tiro *tiros, Borda *bordasJogo);
 void resetJogo(Jogador *jogador);
 
+//Funções - Auxiliares
 float angleToRad(float angulo);
 
 int main(int argc, char *argv[])
@@ -187,11 +197,10 @@ int main(int argc, char *argv[])
     SDL_Rect aux5 = {(largura - 50)/2, 0, 50, surface->h/2};
     textoPontuacao->rect = aux5;
 
-    int bordaSuperior = surface->h;
 
     //Structs
     Borda *bordasJogo = (Borda*) malloc(sizeof(Borda));
-    bordasJogo->superior = bordaSuperior;
+    bordasJogo->superior = 0;
     bordasJogo->inferior = altura;
     bordasJogo->direita = largura;
     bordasJogo->esquerda = 0;
@@ -207,7 +216,7 @@ int main(int argc, char *argv[])
     surface = IMG_Load("imagens/recorde.jpg");
     recorde = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_Texture *credito;
-    surface = IMG_Load("imagens/credito.jpg");
+    surface = IMG_Load("imagens/credito.png");
     credito = SDL_CreateTextureFromSurface(renderer, surface);
 
     //Imagens Gerais
@@ -220,9 +229,13 @@ int main(int argc, char *argv[])
     Objeto *vida = (Objeto*) malloc(sizeof(Objeto));
     surface = IMG_Load("imagens/vida.png");
     vida->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    Tiro *tiros = (Tiro*) malloc(sizeof(Tiro));
+
+    Tiro *tiros = NULL;
+
+    SDL_Texture *texturaTiro;
     surface = IMG_Load("imagens/tiro.png");
-    tiros->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    texturaTiro = SDL_CreateTextureFromSurface(renderer, surface);
+
 
 
     Jogador *jogador = (Jogador*) malloc(sizeof(Jogador));
@@ -234,7 +247,9 @@ int main(int argc, char *argv[])
     jogador->pontuacao = 0;
     jogador->angulo = 0.0f;
     jogador->velocidade = 5;
-    jogador->cooldown = 2000;
+    jogador->cooldown = 0;
+    jogador->dx = 0;
+    jogador->dy = 0;
     jogador->nome = (char*) malloc(sizeof(char)*30);
 
     // Inimigo *inimigo = (Inimigo*) malloc(sizeof(Inimigo));
@@ -268,11 +283,16 @@ int main(int argc, char *argv[])
             {
                 iniciarJogo(renderer, jogo, musicaJogo, musicaAtual, jogador, vida, textoPontuacao, fontePontuacao, branco);
                 moverNave(renderer, jogador);
-                if(atirou == 1)
+                if(atirou == 1 && jogador->cooldown == 0)
                 {
-                    //atirar(jogador, Tiro *tiros);
+                    tiros = atirar(jogador, tiros, texturaTiro);
+                    jogador->cooldown = 50;
                     atirou = 0;
                 }
+                tiros = moverTiros(renderer, tiros, bordasJogo);
+
+                if(jogador->cooldown > 0)
+                    jogador->cooldown--;
                 
                 break;
             }
@@ -372,8 +392,10 @@ int main(int argc, char *argv[])
                     {
                         jogador->direcao = 2;
                     }
-                    if(evento.key.keysym.sym == SDLK_BACKSPACE)
+                    if(evento.key.keysym.sym == SDLK_SPACE)
                     {
+                        printf("Fire!!\n");
+                        
                         atirou = 1;
                     }
                 }
@@ -536,61 +558,64 @@ void moverNave(SDL_Renderer *renderer, Jogador *jogador)
     float angulo = 5.0f;
     float radiano;
 
+    //Calcula o dx e dy
+    radiano = angleToRad(jogador->angulo);
+    jogador->dx = jogador->dy = 0;
+    if((jogador->angulo >= 0 && jogador->angulo <=90))
+    {
+        if(jogador->angulo == 0)
+            jogador->dy = - (jogador->velocidade);
+        else if(jogador->angulo == 90)
+            jogador->dx = jogador->velocidade;
+        else //1º quadrante
+        {
+            jogador->dx = sin(radiano) * jogador->velocidade;
+            jogador->dy = - (cos(radiano) * jogador->velocidade);
+        }
+    }
+    else if(jogador->angulo > 90 && jogador->angulo <= 180)
+    {
+        if(jogador->angulo == 180)
+            jogador->dy = jogador->velocidade;
+        else//2º quadrante
+        {
+            jogador->dx = sin(radiano) * jogador->velocidade;
+            jogador->dy = - (cos(radiano) * jogador->velocidade);
+        }
+    }
+    else if(jogador->angulo > 180 && jogador->angulo <= 270)
+    {
+        if(jogador->angulo == 270)
+            jogador->dx = - (jogador->velocidade);
+        else//3º quadrante
+        {
+            jogador->dx = sin(radiano) * jogador->velocidade;
+            jogador->dy = - (cos(radiano) * jogador->velocidade);
+        }
+    }
+    else //(angulo > 270 && angulo < 360) //4º quadrante
+    {
+        jogador->dx = sin(radiano) * jogador->velocidade;
+        jogador->dy = - (cos(radiano) * jogador->velocidade);
+        
+    }
+
     switch(jogador->direcao)
     {
-        case 0: //Ir para cima
+        case 0: //Ir para frente, independente do angulo
         {
-            radiano = angleToRad(jogador->angulo);
-            if((jogador->angulo >= 0 && jogador->angulo <=90))
-            {
-                if(jogador->angulo == 0)
-                    jogador->rect.y -= jogador->velocidade;
-                else if(jogador->angulo == 90)
-                    jogador->rect.x += jogador->velocidade;
-                else //1º quadrante
-                {
-                    jogador->rect.x += sin(radiano) * jogador->velocidade;
-                    jogador->rect.y -= cos(radiano) * jogador->velocidade;
-                }
-            }
-            else if(jogador->angulo > 90 && jogador->angulo <= 180)
-            {
-                if(jogador->angulo == 180)
-                    jogador->rect.y += jogador->velocidade;
-                else//2º quadrante
-                {
-                    jogador->rect.x += sin(radiano) * jogador->velocidade;
-                    jogador->rect.y -= cos(radiano) * jogador->velocidade;
-                }
-            }
-            else if(jogador->angulo > 180 && jogador->angulo <= 270)
-            {
-                if(jogador->angulo == 270)
-                    jogador->rect.x -= jogador->velocidade;
-                else//3º quadrante
-                {
-                    jogador->rect.x += sin(radiano) * jogador->velocidade;
-                    jogador->rect.y -= cos(radiano) * jogador->velocidade;
-                }
-            }
-            else //(angulo > 270 && angulo < 360) //4º quadrante
-            {
-                jogador->rect.x += sin(radiano) * jogador->velocidade;
-                jogador->rect.y -= cos(radiano) * jogador->velocidade;
-            }
-            
+            jogador->rect.x += jogador->dx;
+            jogador->rect.y += jogador->dy;
             break;
         }
         case 1: //Ir para direita
         {
             jogador->angulo = (int)(jogador->angulo + angulo)%360;
-            printf("Angulo D %.2f\n", jogador->angulo);
             break;
         }
         case 2: //Ir para esquerda
         {
             jogador->angulo = (int)((jogador->angulo - angulo)+360) % 360;
-            printf("Angulo E %.2f\n", jogador->angulo);
             break;
         }
     }
@@ -613,22 +638,111 @@ void resetJogo(Jogador *jogador)
     jogador->rect = aux;
 }
 
-// void atirar(Jogador *jogador, Tiro *tiros)
-// {
-//     Tiro *tiro;
-//     for(tiro = tiros; p != NULL; p = p->prox)
-//     {
-//         if()
-//     }
-//     Tiro *tiro = 
-    
+//Criar
+//Adicionar se atirou
 
-// }
+Tiro* atirar(Jogador *jogador, Tiro *tiros, SDL_Texture *texturaTiro)
+{
+    Tiro *lst;
+    SDL_Rect aux = {jogador->rect.x + (jogador->rect.w/2 - 16/2), jogador->rect.y-5, 16, 40};
+    //SDL_Rect aux = {(jogador->rect.x + (jogador->rect.w/2 - 16/2)) + jogador->dx*2, jogador->rect.y+jogador->dy*2, 16, 40};
 
-/* LISTA
-void imprime (celula *le) {
-   celula *p;
-   for (p = le; p != NULL; p = p->prox)
-      printf ("%d\n", p->conteudo);
+    //Cria o tiro
+    Tiro *tiro = (Tiro*) malloc(sizeof(Tiro));
+    tiro->textura = texturaTiro;
+    tiro->visivel = 1;
+    tiro->prox = NULL;
+    tiro->rect = aux;
+    tiro->dx = jogador->dx;
+    tiro->dy = jogador->dy;
+    tiro->angulo = jogador->angulo;
+
+    //Lista cheia
+    if(tiros != NULL) 
+    {
+        Tiro *temp = NULL;
+        for(lst = tiros; lst != NULL; lst = lst->prox)
+        {
+            temp = lst;
+        }
+        temp->prox = tiro;
+    }
+    //Lista Vazia
+    else //tiros == NULL
+    {
+        tiros = tiro;
+    }
+
+    return tiros;
+
+    //printf("V: %d\n", tiros->visivel);
 }
-*/
+
+Tiro* moverTiros(SDL_Renderer *renderer, Tiro *tiros, Borda *bordasJogo)
+{
+    Tiro *lst;
+    Tiro *temp;
+    Tiro *ant = NULL;
+    int x1, x2, y1, y2;
+
+    //Se a lista não estiver vazia ...
+    if(tiros != NULL)
+    {
+        //, então removemos tiros que colidiram
+        for(lst = tiros; lst != NULL;)
+        {
+            x1 = lst->rect.x;
+            x2 = lst->rect.x + 16;
+            y1 = lst->rect.y;
+            y2 = lst->rect.y + 40;
+
+            if(x1 <= 0 || x2 >= largura || y1 <= 0 || y2 >= altura)//verifica colisao
+                lst->visivel = 0;
+
+            if(lst->visivel == 0)
+            {
+                if(ant == NULL) //Nó inicial
+                {
+                    temp = lst;
+                    if(lst->prox == NULL)
+                        tiros = NULL;
+                    lst = lst->prox;
+                    free(temp);
+                    continue;
+                }
+                else //ant != NullNó não inicial
+                {
+                    if(lst->prox == NULL) //ultimo
+                    {
+                        ant->prox = NULL;
+                        free(lst);
+                    }
+                    else //meio
+                    {
+                        temp = lst;
+                        ant->prox = lst->prox;
+                        lst = lst->prox;
+                        free(temp);
+                    }
+                }
+            }
+            else //Se for visível
+            {
+                ant = lst;
+                lst = lst->prox;
+            }
+        }
+    }
+
+    //Imprime os tiros na tela
+    int i;
+    for(i = 0, lst = tiros; lst != NULL; lst = lst->prox, i++)
+    {
+        lst->rect.x += lst->dx*2;
+        lst->rect.y += lst->dy*2;
+        SDL_RenderCopyEx(renderer, lst->textura, NULL, &lst->rect, lst->angulo, NULL, SDL_FLIP_NONE);
+    }
+    printf("Nº de Tiros - %d\n", i);
+
+    return tiros;
+}
