@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
@@ -10,65 +11,29 @@
 #define largura 640
 #define altura 480
 
-//SDL_Rect sRect = {xTextura, yTextura, larguraFigura, alturaFigura};
-//SDL_Rect dRect = {xRenderer, yRenderer, larguraFigura, alturaFigura};
-//SDL_Surface *surface = IMG_Load("imagens/recorde.jpg");
-//SDL_Texture *textura = SDL_CreateTextureFromSurface(renderer, surface);
-//char dir[] = "imagens/rectnave.png";
-//char dir[] = "imagens/inimigos.png";
-
-/*Ideias - Jogo*/
-/*
-Nave:
--Move-se com as setas: ><, fazem a nave girar, enquanto ^ movimenta ela até parar por conta do atrito.
--Essa parte de ir parando ainda não tenho ideia.
--A parte de girar será feita com o RenderCopyEX.
--A movimentação ^ será feita incrementando/decrementando dependendo da angulação que está a nave.
--O tiro tem uma variável cooldown da nave.
-
-Inimigos:
--Surgimento: Escolher aleatoriamente um dos lados e depois uma posição naquele lado e para mover vai ir incrementando/decremen
-tando o x,y do rect do inimigo.
--rect: Podemos ao mover, mudar a angulação deles de maneira constante.
--Uma variavel para controlar a quantidade de inimigos
-    if(NumInimigos < 3)
-    {
-        Chama outro inimigo
-    }
-    else
-    {
-        for(i < 3)
-        {
-            mover inimigos.
-        }
-    }
-
-Tiro:
--Tempo: Definir uma variável cooldown, onde a cada iteração do loop ela é decrementada e quando chegar a 0. Você pode atirar
-novamente, quando atirou ela reseta para 2000(ex).
--Animação: O tiro precisa sair da frente da nave ao apertar a barra de espaço, para se movimentar, incrementamos/decrementamos
-o x e y do rect na direção da angulação da nave.
-*/
-
-/*---Estruturas---*/
-
-// typedef struct inimigo
-// {
-//     int numInimigos; // 3 inimigos
-//     SDL_Texture *textura;
-//     SDL_Rect *rect;
-// }Inimigo;
-
-
 //Numero de inimigos falta.
-typedef struct inimigo Inimigos;
+typedef struct inimigo Inimigo;
 struct inimigo
 {
    int tipo; //pra sabe qual é 0 - 1 -2
+   int angulo;
+   int lado;
+   int dx;
+   int dy;
+   int visivel;
    SDL_Texture *textura;
-   SDL_Rect rect[3]; // posicao dele 0 - 1 - 2
-   Inimigos *prox;
+   SDL_Rect srect;
+   SDL_Rect drect; // posicao dele 0 - 1 - 2
+   Inimigo *prox;
 };
+
+typedef struct info
+{
+    int numMinInimigos;
+    int numAtualInimigos;
+    int cooldownSpawn;
+    SDL_Rect *srect;
+}InfoInimigo;
 
 typedef struct jogador
 {
@@ -76,7 +41,7 @@ typedef struct jogador
     int pontuacao; // pontuação que aparece no jogo
     int direcao; //0-Cima; 1-Direita; 2-Esquerda
     int velocidade;
-    int cooldown;
+    int cooldownTiro;
     int dx;
     int dy;
     float angulo;
@@ -103,14 +68,6 @@ struct tiro
     Tiro *prox;
 };
 
-typedef struct borda
-{
-    int superior;
-    int inferior;
-    int direita;
-    int esquerda;
-}Borda;
-
 //Funções
 void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int *musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu);
 void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual, Jogador* jogador);
@@ -120,8 +77,13 @@ void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *mus
 //Funções - Jogo
 void mostrarInfoJogo(SDL_Renderer *renderer, Jogador *jogador, Objeto *vida, Objeto *textoPontuacao, TTF_Font *fontePontuacao, SDL_Color branco);
 void moverNave(SDL_Renderer *renderer, Jogador *jogador);
+
 Tiro* atirar(Jogador *jogador, Tiro *tiros, SDL_Texture *texturaTiro);
-Tiro* moverTiros(SDL_Renderer *renderer, Tiro *tiros, Borda *bordasJogo);
+Tiro* moverTiros(SDL_Renderer *renderer, Tiro *tiros);
+
+Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture *texturaInimigo);
+Inimigo* moverInimigos(SDL_Renderer *renderer, InfoInimigo *infoInimigo, Inimigo* inimigos);
+
 void resetJogo(Jogador *jogador);
 
 //Funções - Auxiliares
@@ -198,14 +160,6 @@ int main(int argc, char *argv[])
     SDL_Rect aux5 = {(largura - 50)/2, 0, 50, surface->h/2};
     textoPontuacao->rect = aux5;
 
-
-    //Structs
-    Borda *bordasJogo = (Borda*) malloc(sizeof(Borda));
-    bordasJogo->superior = 0;
-    bordasJogo->inferior = altura;
-    bordasJogo->direita = largura;
-    bordasJogo->esquerda = 0;
-
     //Fundos
     SDL_Texture *menu;
     surface = IMG_Load("imagens/menu.jpg");
@@ -236,8 +190,9 @@ int main(int argc, char *argv[])
     SDL_Texture *texturaTiro;
     surface = IMG_Load("imagens/tiro.png");
     texturaTiro = SDL_CreateTextureFromSurface(renderer, surface);
-
-
+    SDL_Texture *texturaInimigo;
+    surface = IMG_Load("imagens/inimigos.png");
+    texturaInimigo = SDL_CreateTextureFromSurface(renderer, surface);
 
     Jogador *jogador = (Jogador*) malloc(sizeof(Jogador));
     surface = IMG_Load("imagens/nave.png");
@@ -248,26 +203,24 @@ int main(int argc, char *argv[])
     jogador->pontuacao = 0;
     jogador->angulo = 0.0f;
     jogador->velocidade = 5;
-    jogador->cooldown = 0;
+    jogador->cooldownTiro = 0;
     jogador->dx = 0;
     jogador->dy = 0;
     jogador->nome = (char*) malloc(sizeof(char)*30);
 
-    // Inimigo *inimigo = (Inimigo*) malloc(sizeof(Inimigo));
-    // surface = IMG_Load("imagens/inimigos.png");
-    // inimigo->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    // inimigo->numInimigos = 3;
-    // inimigo->rect = (SDL_Rect*) malloc(sizeof(SDL_Rect)*3);
-    
-    
+    InfoInimigo *infoInimigo = (InfoInimigo*) malloc(sizeof(InfoInimigo));
+    infoInimigo->numMinInimigos = 5;
+    infoInimigo->numAtualInimigos = 0;
+    infoInimigo->cooldownSpawn = 100;
+    infoInimigo->srect = (SDL_Rect*) malloc(sizeof(SDL_Rect)*3);
+    SDL_Rect aux7 = {0,0,467,474};
+    infoInimigo->srect[0] = aux7;
+    SDL_Rect aux8 = {471,0,869,382};
+    infoInimigo->srect[1] = aux8;
+    SDL_Rect aux9 = {872,0,1029,74};
+    infoInimigo->srect[2] = aux9;
 
-    //SDL_Rect aux = {0,0,159,94};
-    //jogador->rect[0] = aux;//Cima
-
-    //SDL_Rect aux = {0,0,467,474};
-    //inimigo->rect[0] = aux;
-
-    //textura = menu;
+    Inimigo *inimigos = (Inimigo*) malloc(sizeof(Inimigo));
 
 	while(jogando == 1)
     {
@@ -282,19 +235,35 @@ int main(int argc, char *argv[])
             }
             case 1://Jogo
             {
+                //Musica + Fundo
                 iniciarJogo(renderer, jogo, musicaJogo, musicaAtual, jogador);
+
+                //Mover nave
                 moverNave(renderer, jogador);
-                if(atirou == 1 && jogador->cooldown == 0)
+
+                //Criar e mover tiros
+                if(atirou == 1 && jogador->cooldownTiro == 0)
                 {
                     tiros = atirar(jogador, tiros, texturaTiro);
-                    jogador->cooldown = 50;
+                    jogador->cooldownTiro = 50;
                     atirou = 0;
                 }
-                tiros = moverTiros(renderer, tiros, bordasJogo);
+                tiros = moverTiros(renderer, tiros);
+                if(jogador->cooldownTiro > 0)
+                    jogador->cooldownTiro--;
 
-                if(jogador->cooldown > 0)
-                    jogador->cooldown--;
+                //Criar e mover inimigos
+                if(infoInimigo->cooldownSpawn == 0 && infoInimigo->numAtualInimigos < infoInimigo->numMinInimigos)
+                {
+                    printf("Criou\n");
+                    inimigos = spawnInimigos(infoInimigo, inimigos, texturaInimigo);
+                    infoInimigo->cooldownSpawn = 100;
+                }
+                inimigos = moverInimigos(renderer, infoInimigo, inimigos);
+                if(infoInimigo->cooldownSpawn > 0)
+                    infoInimigo->cooldownSpawn--;
 
+                //Pontuação e vida
                 mostrarInfoJogo(renderer, jogador, vida, textoPontuacao, fontePontuacao, branco);
 
                 break;
@@ -543,6 +512,7 @@ void moverNave(SDL_Renderer *renderer, Jogador *jogador)
     //Calcula o dx e dy
     radiano = angleToRad(jogador->angulo);
     jogador->dx = jogador->dy = 0;
+
     if((jogador->angulo >= 0 && jogador->angulo <=90))
     {
         if(jogador->angulo == 0)
@@ -588,6 +558,31 @@ void moverNave(SDL_Renderer *renderer, Jogador *jogador)
         {
             jogador->rect.x += jogador->dx;
             jogador->rect.y += jogador->dy;
+
+            //Colisão da nave com a borda
+            int x1, x2, y1, y2;
+
+            x1 = jogador->rect.x;
+            x2 = jogador->rect.x + jogador->rect.w;
+            y1 = jogador->rect.y;
+            y2 = jogador->rect.y + jogador->rect.h;
+
+            if(x1 < 0)
+            {
+                jogador->rect.x = largura;
+            }
+            if(x2 > largura) //ok
+            {
+                jogador->rect.x = 0;
+            }
+            if(y1 < 0)
+            {
+                jogador->rect.y = altura;
+            }
+            if(y2 > altura) //ok
+            {
+                jogador->rect.y = 0;
+            }
             break;
         }
         case 1: //Ir para direita
@@ -657,11 +652,9 @@ Tiro* atirar(Jogador *jogador, Tiro *tiros, SDL_Texture *texturaTiro)
     }
 
     return tiros;
-
-    //printf("V: %d\n", tiros->visivel);
 }
 
-Tiro* moverTiros(SDL_Renderer *renderer, Tiro *tiros, Borda *bordasJogo)
+Tiro* moverTiros(SDL_Renderer *renderer, Tiro *tiros)
 {
     Tiro *lst;
     Tiro *temp;
@@ -675,9 +668,9 @@ Tiro* moverTiros(SDL_Renderer *renderer, Tiro *tiros, Borda *bordasJogo)
         for(lst = tiros; lst != NULL;)
         {
             x1 = lst->rect.x;
-            x2 = lst->rect.x + 16;
+            x2 = lst->rect.x + lst->rect.w;
             y1 = lst->rect.y;
-            y2 = lst->rect.y + 40;
+            y2 = lst->rect.y + lst->rect.h;
 
             if(x1 <= 0 || x2 >= largura || y1 <= 0 || y2 >= altura)//verifica colisao
                 lst->visivel = 0;
@@ -750,4 +743,192 @@ void mostrarInfoJogo(SDL_Renderer *renderer, Jogador *jogador, Objeto *vida, Obj
     surface = TTF_RenderText_Solid(fontePontuacao, pontuacao, branco);
     textoPontuacao->textura = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_RenderCopy(renderer, textoPontuacao->textura, NULL, &textoPontuacao->rect);
+}
+
+//Cria inimigos se a quantidade for menor que x
+Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture *texturaInimigo)
+{   
+    //Se o cooldown estiver em 0 e tiver menos que o numMinInimigos ...
+
+    //Criamos um inimigo
+    Inimigo* inimigo = (Inimigo*) malloc(sizeof(Inimigo));
+    inimigo->tipo = rand() % 3;
+    inimigo->lado = rand() % 4; //lado que o inimigo aparece.
+    inimigo->angulo = 0;
+    inimigo->prox = NULL;
+    inimigo->textura = texturaInimigo;
+    inimigo->srect = infoInimigo->srect[inimigo->tipo];
+    inimigo->dx = inimigo->dy = 0;
+
+    int tamanhoX, tamanhoY;
+    tamanhoX = tamanhoY = 0;
+
+    //Tamanho dos inimigos dependendo do tipo
+    switch(inimigo->tipo)
+    {
+        case 0://Maior
+        {
+            tamanhoX = 80;
+            tamanhoY = 80;
+            break;
+        }
+        case 1://Medio
+        {
+            tamanhoX = 50;
+            tamanhoY = 60;
+            break;
+        }
+        case 2://Pequeno
+        {
+            tamanhoX = 40;
+            tamanhoY = 30;
+            break;
+        }
+    }
+
+    int aux, pos;
+    int deslocamento = 5;
+
+    //Surgimento
+    switch(inimigo->lado)
+    {
+        case 0://Cima
+        {
+            aux = largura/tamanhoX;
+            pos = (rand() % aux)*tamanhoX;
+            SDL_Rect aux1 = {pos,0,tamanhoX,tamanhoY};
+            inimigo->drect = aux1;
+
+            inimigo->dy = +deslocamento;
+            break;
+        }
+        case 1://Baixo
+        {
+            aux = largura/tamanhoX;
+            pos = (rand() % aux)*tamanhoX;
+            SDL_Rect aux2 = {pos,altura,tamanhoX,tamanhoY};
+            inimigo->drect = aux2;
+
+            inimigo->dy = -deslocamento;
+            break;
+        }
+        case 2://Direita
+        {
+            aux = altura/tamanhoY;
+            pos = (rand() % aux)*tamanhoY;
+            SDL_Rect aux3 = {largura,pos,tamanhoX,tamanhoY};
+            inimigo->drect = aux3;
+
+            inimigo->dx = -deslocamento;
+            break;
+        }
+        case 3://Esquerda
+        {
+            aux = altura/tamanhoY;
+            pos = (rand() % aux)*tamanhoY;
+            SDL_Rect aux4 = {0,pos,tamanhoX,tamanhoY};
+            inimigo->drect = aux4;
+
+            inimigo->dx = -deslocamento;
+            break;
+        }
+    }
+
+    Inimigo *lst;
+
+    //Lista com itens
+    if(inimigos != NULL) 
+    {
+        Inimigo *temp = NULL;
+        for(lst = inimigos; lst != NULL; lst = lst->prox)
+        {
+            temp = lst;
+        }
+        temp->prox = inimigo;
+    }
+    //Lista Vazia
+    else //inimigos == NULL
+    {
+        inimigos = inimigo;
+    }
+
+    printf("DX - %d\n", inimigo->dx);
+
+    return inimigos;
+}
+
+Inimigo* moverInimigos(SDL_Renderer *renderer, InfoInimigo *infoInimigo, Inimigo* inimigos)
+{
+    if(inimigos == NULL)
+        return inimigos;
+
+    Inimigo *lst;
+    Inimigo *temp;
+    Inimigo *ant = NULL;
+    int x1, x2, y1, y2;
+
+    //Removemos inimigos que colidiram
+    for(lst = inimigos; lst != NULL;)
+    {
+        x1 = lst->drect.x;
+        x2 = lst->drect.x + lst->drect.w;
+        y1 = lst->drect.y;
+        y2 = lst->drect.y + lst->drect.h;
+
+        if(x1 <= 0 || x2 >= largura || y1 <= 0 || y2 >= altura)//verifica colisao
+            lst->visivel = 0;
+
+        if(lst->visivel == 0)
+        {
+            if(ant == NULL) //Nó inicial
+            {
+                temp = lst;
+                if(lst->prox == NULL)
+                    inimigos = NULL;
+                lst = lst->prox;
+                free(temp);
+                continue;
+            }
+            else //ant != NullNó não inicial
+            {
+                if(lst->prox == NULL) //ultimo
+                {
+                    ant->prox = NULL;
+                    free(lst);
+                }
+                else //meio
+                {
+                    temp = lst;
+                    ant->prox = lst->prox;
+                    lst = lst->prox;
+                    free(temp);
+                }
+            }
+        }
+        else //Se for visível
+        {
+            ant = lst;
+            lst = lst->prox;
+        }
+    }
+
+    //Mostrar os inimigos
+    for(lst = inimigos; lst != NULL; lst = lst->prox)
+    {
+        if(lst->tipo == 0 || lst->tipo == 1) //rotacionar
+        {
+            lst->angulo = (lst->angulo+5) % 360;
+            lst->drect.x += lst->dx;
+            lst->drect.y += lst->dy;
+            SDL_RenderCopyEx(renderer, lst->textura, &lst->srect, &lst->drect, lst->angulo, NULL, SDL_FLIP_NONE);
+        }
+        else//(lst->tipo == 2) - Espelhar
+        {
+            lst->drect.x += lst->dx;
+            lst->drect.y += lst->dy;
+            SDL_RenderCopyEx(renderer, lst->textura, &lst->srect, &lst->drect, lst->angulo, NULL, SDL_FLIP_HORIZONTAL);   
+        }
+    }
+    
+    return inimigos;
 }
