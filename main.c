@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
                 //Criar e mover inimigos
                 if(infoInimigo->cooldownSpawn == 0 && infoInimigo->numAtualInimigos < infoInimigo->numMinInimigos)
                 {
-                    printf("Criou\n");
+                    printf("atual: %d\n", infoInimigo->numAtualInimigos);
                     inimigos = spawnInimigos(infoInimigo, inimigos, texturaInimigo);
                     infoInimigo->cooldownSpawn = 100;
                 }
@@ -307,7 +307,7 @@ int main(int argc, char *argv[])
                                 
                 if(escolha == 0) //Menu
                 {
-                    printf("Estrou no menu.\n");
+                    printf("Entrou Menu.\n");
                             /*Seleção - Menu*/
                     if(evento.key.keysym.sym == SDLK_RETURN || evento.key.keysym.sym == SDLK_KP_ENTER)
                     {
@@ -348,8 +348,6 @@ int main(int argc, char *argv[])
                 }
                 if(escolha == 1) //Jogo
                 {
-                    printf("Entrou Jogo.\n");
-
                                         /*Movimentação Nave - Jogo*/
                     //Alterar a direção e o rect usando uma função então precisa de uma variavel direção
                     if(evento.key.keysym.sym == SDLK_UP)
@@ -567,17 +565,17 @@ void moverNave(SDL_Renderer *renderer, Jogador *jogador)
             y1 = jogador->rect.y;
             y2 = jogador->rect.y + jogador->rect.h;
 
-            if(x1 < 0)
+            if(x1 < 0)//ok
             {
-                jogador->rect.x = largura;
+                jogador->rect.x = largura-jogador->rect.w;
             }
             if(x2 > largura) //ok
             {
                 jogador->rect.x = 0;
             }
-            if(y1 < 0)
+            if(y1 < 0)//ok
             {
-                jogador->rect.y = altura;
+                jogador->rect.y = altura-jogador->rect.h;
             }
             if(y2 > altura) //ok
             {
@@ -797,6 +795,7 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture 
             aux = largura/tamanhoX;
             pos = (rand() % aux)*tamanhoX;
             SDL_Rect aux1 = {pos,0,tamanhoX,tamanhoY};
+            //SDL_Rect aux1 = {200,200,tamanhoX,tamanhoY};
             inimigo->drect = aux1;
 
             inimigo->dy = +deslocamento;
@@ -807,6 +806,7 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture 
             aux = largura/tamanhoX;
             pos = (rand() % aux)*tamanhoX;
             SDL_Rect aux2 = {pos,altura,tamanhoX,tamanhoY};
+            //SDL_Rect aux2 = {200,200,tamanhoX,tamanhoY};
             inimigo->drect = aux2;
 
             inimigo->dy = -deslocamento;
@@ -817,6 +817,7 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture 
             aux = altura/tamanhoY;
             pos = (rand() % aux)*tamanhoY;
             SDL_Rect aux3 = {largura,pos,tamanhoX,tamanhoY};
+            //SDL_Rect aux3 = {200,200,tamanhoX,tamanhoY};
             inimigo->drect = aux3;
 
             inimigo->dx = -deslocamento;
@@ -827,6 +828,7 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture 
             aux = altura/tamanhoY;
             pos = (rand() % aux)*tamanhoY;
             SDL_Rect aux4 = {0,pos,tamanhoX,tamanhoY};
+            //SDL_Rect aux4 = {200,200,tamanhoX,tamanhoY};
             inimigo->drect = aux4;
 
             inimigo->dx = -deslocamento;
@@ -852,7 +854,7 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture 
         inimigos = inimigo;
     }
 
-    printf("DX - %d\n", inimigo->dx);
+    infoInimigo->numAtualInimigos++; //Foi criado um inimigo
 
     return inimigos;
 }
@@ -875,8 +877,12 @@ Inimigo* moverInimigos(SDL_Renderer *renderer, InfoInimigo *infoInimigo, Inimigo
         y1 = lst->drect.y;
         y2 = lst->drect.y + lst->drect.h;
 
-        if(x1 <= 0 || x2 >= largura || y1 <= 0 || y2 >= altura)//verifica colisao
+        if(x1 < 0 || x2 > largura || y1 < 0 || y2 > altura)//verifica colisao
+        {
+            printf("X1:%d\t X2:%d\t Y1:%d\t Y2:%d\t\n", x1, x2, y1, y2);
             lst->visivel = 0;
+            infoInimigo->numAtualInimigos--;
+        }
 
         if(lst->visivel == 0)
         {
