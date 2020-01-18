@@ -16,6 +16,7 @@ typedef struct inimigo Inimigo;
 struct inimigo
 {
    int tipo; //pra sabe qual é 0 - 1 -2
+   int pontos;
    int angulo;
    int flip;
    int cooldownFlip;
@@ -86,6 +87,8 @@ Tiro* moverTiros(SDL_Renderer *renderer, Tiro *tiros);
 
 Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture *texturaInimigo);
 Inimigo* moverInimigos(SDL_Renderer *renderer, InfoInimigo *infoInimigo, Inimigo* inimigos);
+
+void colisao(Jogador *jogador, Inimigo* inimigos, Tiro* tiros);
 
 void resetJogo(Jogador *jogador);
 
@@ -240,6 +243,8 @@ int main(int argc, char *argv[])
             {
                 //Musica + Fundo
                 iniciarJogo(renderer, jogo, musicaJogo, musicaAtual, jogador);
+
+                colisao(jogador, inimigos, tiros);
 
                 //Mover nave
                 moverNave(renderer, jogador);
@@ -613,7 +618,7 @@ void resetJogo(Jogador *jogador)
     jogador->vida = 3;
     jogador->pontuacao = 0;
     jogador->angulo = 0.0f;
-    SDL_Rect aux = {(largura - 46)/2, (altura - 80)/2, 46, 80};
+    SDL_Rect aux = {(largura - jogador->rect.w)/2, (altura - jogador->rect.h)/2, jogador->rect.w, jogador->rect.h};
     jogador->rect = aux;
 }
 
@@ -774,6 +779,7 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture 
             tamanhoX = 80;
             tamanhoY = 80;
             inimigo->textura = infoInimigo->textura0;
+            inimigo->pontos = 3;
             break;
         }
         case 1://Medio
@@ -781,6 +787,7 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture 
             tamanhoX = 60;
             tamanhoY = 60;
             inimigo->textura = infoInimigo->textura1;
+            inimigo->pontos = 2;
             break;
         }
         case 2://Pequeno
@@ -788,6 +795,7 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture 
             tamanhoX = 40;
             tamanhoY = 40;
             inimigo->textura = infoInimigo->textura2;
+            inimigo->pontos = 1;
             break;
         }
     }
@@ -957,12 +965,101 @@ Inimigo* moverInimigos(SDL_Renderer *renderer, InfoInimigo *infoInimigo, Inimigo
     return inimigos;
 }
 
-// void colisao(Jogador *jogador, Inimigo* inimigos)
-// {
+void colisao(Jogador *jogador, Inimigo* inimigos, Tiro* tiros)
+{
+    Inimigo* lstI;
+    Tiro* lstT;
+    int colidiu = 1;
 
-// }
+    //Só verifica se ambos não forem NULL
+    if(inimigos != NULL && tiros != NULL)
+    {
+        //Colisão Inimigo x Tiro
+        for(lstI = inimigos; lstI != NULL; lstI = lstI->prox)
+        {
+            for(lstT = tiros; lstT != NULL; lstT = lstT->prox)
+            {
+                //Se o tiro está à esquerda
+                if(lstT->rect.x + lstT->rect.w < lstI->rect.x)
+                {
+                    colidiu = 0;
+                }
+                //Se o tiro está à direita
+                else if(lstT->rect.x > lstI->rect.x + lstI->rect.w)
+                {
+                    colidiu = 0;
+                }
+                //Se o tiro está à cima
+                else if(lstT->rect.y + lstT->rect.h < lstI->rect.y)
+                {
+                    colidiu = 0;
+                }
+                //Se o tiro está à baixo
+                else if(lstT->rect.y > lstI->rect.y + lstI->rect.h)
+                {
+                    colidiu = 0;
+                }
 
-//Inimigo
+                //Se eles colidiram, então ...
+                if(colidiu == 1)
+                {
+                    lstT->visivel = 0; //O tiro some
+                    lstI->visivel = 0; //O inimigo some
+                    //O jogador recebe a pontuação de acordo com o tipo de inimigo atingido.
+                    jogador->pontuacao += lstI->pontos;
+                }
+
+                colidiu = 1;
+            }
+        }
+    }
+
+    //Só verifica se inimigos não for NULL
+    if(inimigos != NULL)
+    {
+        //Colisão Inimigo x Nave
+        for(lstI = inimigos; lstI != NULL; lstI = lstI->prox)
+        {
+            //Se a Nave está à esquerda
+            if(jogador->rect.x + jogador->rect.w < lstI->rect.x)
+            {
+                colidiu = 0;
+            }
+            //Se a Nave está à direita
+            else if(jogador->rect.x > lstI->rect.x + lstI->rect.w)
+            {
+                colidiu = 0;
+            }
+            //Se a Nave está à cima
+            else if(jogador->rect.y + jogador->rect.h < lstI->rect.y)
+            {
+                colidiu = 0;
+            }
+            //Se a Nave está à baixo
+            else if(jogador->rect.y > lstI->rect.y + lstI->rect.h)
+            {
+                colidiu = 0;
+            }
+
+            //Se eles colidiram, então ...
+            if(colidiu == 1)
+            {
+                lstI->visivel = 0; //O inimigo some
+                //O jogador recebe a pontuação de acordo com o tipo de inimigo atingido.
+                jogador->pontuacao += lstI->pontos;
+                //O jogador perde uma vida
+                jogador->vida--;
+                //O jogador é teleportado para o meio do jogo, ou um tempo de respawn
+                SDL_Rect aux = {(largura - jogador->rect.w)/2, (altura - jogador->rect.h)/2, jogador->rect.w, jogador->rect.h};
+                jogador->rect = aux;
+            }
+
+            colidiu = 1;
+        }
+    }
+}
+
+//Inimigo teleporta ao atingir as paredes
 // int x1, x2, y1, y2;
 
 // x1 = lst->drect.x;
