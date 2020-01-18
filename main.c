@@ -17,22 +17,25 @@ struct inimigo
 {
    int tipo; //pra sabe qual é 0 - 1 -2
    int angulo;
+   int flip;
+   int cooldownFlip;
    int lado;
    int dx;
    int dy;
    int visivel;
    SDL_Texture *textura;
-   SDL_Rect srect;
-   SDL_Rect drect; // posicao dele 0 - 1 - 2
+   SDL_Rect rect; // posicao dele 0 - 1 - 2
    Inimigo *prox;
 };
 
 typedef struct info
 {
-    int numMinInimigos;
+    int numMaxInimigos;
     int numAtualInimigos;
     int cooldownSpawn;
-    SDL_Rect *srect;
+    SDL_Texture *textura0;
+    SDL_Texture *textura1;
+    SDL_Texture *textura2;
 }InfoInimigo;
 
 typedef struct jogador
@@ -209,18 +212,18 @@ int main(int argc, char *argv[])
     jogador->nome = (char*) malloc(sizeof(char)*30);
 
     InfoInimigo *infoInimigo = (InfoInimigo*) malloc(sizeof(InfoInimigo));
-    infoInimigo->numMinInimigos = 5;
+    infoInimigo->numMaxInimigos = 5;
     infoInimigo->numAtualInimigos = 0;
-    infoInimigo->cooldownSpawn = 100;
-    infoInimigo->srect = (SDL_Rect*) malloc(sizeof(SDL_Rect)*3);
-    SDL_Rect aux7 = {0,0,467,474};
-    infoInimigo->srect[0] = aux7;
-    SDL_Rect aux8 = {471,0,869,382};
-    infoInimigo->srect[1] = aux8;
-    SDL_Rect aux9 = {872,0,1029,74};
-    infoInimigo->srect[2] = aux9;
+    infoInimigo->cooldownSpawn = 200;
+    surface = IMG_Load("imagens/inimigo0.png");
+    infoInimigo->textura0 = SDL_CreateTextureFromSurface(renderer, surface);
+    surface = IMG_Load("imagens/inimigo1.png");
+    infoInimigo->textura1 = SDL_CreateTextureFromSurface(renderer, surface);
+    surface = IMG_Load("imagens/inimigo2.png");
+    infoInimigo->textura2 = SDL_CreateTextureFromSurface(renderer, surface);
 
-    Inimigo *inimigos = (Inimigo*) malloc(sizeof(Inimigo));
+
+    Inimigo *inimigos;
 
 	while(jogando == 1)
     {
@@ -253,11 +256,11 @@ int main(int argc, char *argv[])
                     jogador->cooldownTiro--;
 
                 //Criar e mover inimigos
-                if(infoInimigo->cooldownSpawn == 0 && infoInimigo->numAtualInimigos < infoInimigo->numMinInimigos)
+                if(infoInimigo->cooldownSpawn == 0 && infoInimigo->numAtualInimigos < infoInimigo->numMaxInimigos)
                 {
-                    printf("atual: %d\n", infoInimigo->numAtualInimigos);
                     inimigos = spawnInimigos(infoInimigo, inimigos, texturaInimigo);
-                    infoInimigo->cooldownSpawn = 100;
+                    infoInimigo->cooldownSpawn = 200;
+                    printf("atual: %d\n", infoInimigo->numAtualInimigos);
                 }
                 inimigos = moverInimigos(renderer, infoInimigo, inimigos);
                 if(infoInimigo->cooldownSpawn > 0)
@@ -565,19 +568,19 @@ void moverNave(SDL_Renderer *renderer, Jogador *jogador)
             y1 = jogador->rect.y;
             y2 = jogador->rect.y + jogador->rect.h;
 
-            if(x1 < 0)//ok
+            if(x1 < 0)
             {
                 jogador->rect.x = largura-jogador->rect.w;
             }
-            if(x2 > largura) //ok
+            if(x2 > largura)
             {
                 jogador->rect.x = 0;
             }
-            if(y1 < 0)//ok
+            if(y1 < 0)
             {
                 jogador->rect.y = altura-jogador->rect.h;
             }
-            if(y2 > altura) //ok
+            if(y2 > altura)
             {
                 jogador->rect.y = 0;
             }
@@ -746,40 +749,45 @@ void mostrarInfoJogo(SDL_Renderer *renderer, Jogador *jogador, Objeto *vida, Obj
 //Cria inimigos se a quantidade for menor que x
 Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture *texturaInimigo)
 {   
-    //Se o cooldown estiver em 0 e tiver menos que o numMinInimigos ...
+    //Se o cooldown estiver em 0 e tiver menos que o numMaxInimigos ...
 
     //Criamos um inimigo
     Inimigo* inimigo = (Inimigo*) malloc(sizeof(Inimigo));
     inimigo->tipo = rand() % 3;
     inimigo->lado = rand() % 4; //lado que o inimigo aparece.
     inimigo->angulo = 0;
+    inimigo->flip = 0;
+    inimigo->cooldownFlip = 40;
+    inimigo->visivel = 1;
     inimigo->prox = NULL;
-    inimigo->textura = texturaInimigo;
-    inimigo->srect = infoInimigo->srect[inimigo->tipo];
     inimigo->dx = inimigo->dy = 0;
 
     int tamanhoX, tamanhoY;
     tamanhoX = tamanhoY = 0;
 
     //Tamanho dos inimigos dependendo do tipo
+    //Escolha da textura
     switch(inimigo->tipo)
     {
         case 0://Maior
         {
             tamanhoX = 80;
             tamanhoY = 80;
+            inimigo->textura = infoInimigo->textura0;
             break;
         }
         case 1://Medio
         {
-            tamanhoX = 50;
+            tamanhoX = 60;
             tamanhoY = 60;
+            inimigo->textura = infoInimigo->textura1;
             break;
         }
         case 2://Pequeno
         {
             tamanhoX = 40;
-            tamanhoY = 30;
+            tamanhoY = 40;
+            inimigo->textura = infoInimigo->textura2;
             break;
         }
     }
@@ -795,10 +803,9 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture 
             aux = largura/tamanhoX;
             pos = (rand() % aux)*tamanhoX;
             SDL_Rect aux1 = {pos,0,tamanhoX,tamanhoY};
-            //SDL_Rect aux1 = {200,200,tamanhoX,tamanhoY};
-            inimigo->drect = aux1;
+            inimigo->rect = aux1;
 
-            inimigo->dy = +deslocamento;
+            inimigo->dy = deslocamento;
             break;
         }
         case 1://Baixo
@@ -806,10 +813,9 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture 
             aux = largura/tamanhoX;
             pos = (rand() % aux)*tamanhoX;
             SDL_Rect aux2 = {pos,altura,tamanhoX,tamanhoY};
-            //SDL_Rect aux2 = {200,200,tamanhoX,tamanhoY};
-            inimigo->drect = aux2;
+            inimigo->rect = aux2;
 
-            inimigo->dy = -deslocamento;
+            inimigo->dy = -(deslocamento);
             break;
         }
         case 2://Direita
@@ -817,10 +823,9 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture 
             aux = altura/tamanhoY;
             pos = (rand() % aux)*tamanhoY;
             SDL_Rect aux3 = {largura,pos,tamanhoX,tamanhoY};
-            //SDL_Rect aux3 = {200,200,tamanhoX,tamanhoY};
-            inimigo->drect = aux3;
+            inimigo->rect = aux3;
 
-            inimigo->dx = -deslocamento;
+            inimigo->dx = -(deslocamento);
             break;
         }
         case 3://Esquerda
@@ -828,10 +833,9 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture 
             aux = altura/tamanhoY;
             pos = (rand() % aux)*tamanhoY;
             SDL_Rect aux4 = {0,pos,tamanhoX,tamanhoY};
-            //SDL_Rect aux4 = {200,200,tamanhoX,tamanhoY};
-            inimigo->drect = aux4;
+            inimigo->rect = aux4;
 
-            inimigo->dx = -deslocamento;
+            inimigo->dx = deslocamento;
             break;
         }
     }
@@ -872,20 +876,21 @@ Inimigo* moverInimigos(SDL_Renderer *renderer, InfoInimigo *infoInimigo, Inimigo
     //Removemos inimigos que colidiram
     for(lst = inimigos; lst != NULL;)
     {
-        x1 = lst->drect.x;
-        x2 = lst->drect.x + lst->drect.w;
-        y1 = lst->drect.y;
-        y2 = lst->drect.y + lst->drect.h;
+        x1 = lst->rect.x;
+        x2 = lst->rect.x - lst->rect.w;
+        y1 = lst->rect.y;
+        y2 = lst->rect.y - lst->rect.h;
 
         if(x1 < 0 || x2 > largura || y1 < 0 || y2 > altura)//verifica colisao
         {
-            printf("X1:%d\t X2:%d\t Y1:%d\t Y2:%d\t\n", x1, x2, y1, y2);
+            printf("2\n");
             lst->visivel = 0;
             infoInimigo->numAtualInimigos--;
         }
 
         if(lst->visivel == 0)
         {
+            printf("2.1\n");
             if(ant == NULL) //Nó inicial
             {
                 temp = lst;
@@ -921,20 +926,68 @@ Inimigo* moverInimigos(SDL_Renderer *renderer, InfoInimigo *infoInimigo, Inimigo
     //Mostrar os inimigos
     for(lst = inimigos; lst != NULL; lst = lst->prox)
     {
+        printf("3\n");
         if(lst->tipo == 0 || lst->tipo == 1) //rotacionar
         {
             lst->angulo = (lst->angulo+5) % 360;
-            lst->drect.x += lst->dx;
-            lst->drect.y += lst->dy;
-            SDL_RenderCopyEx(renderer, lst->textura, &lst->srect, &lst->drect, lst->angulo, NULL, SDL_FLIP_NONE);
+
+            lst->rect.x += lst->dx;
+            lst->rect.y += lst->dy;
+            //printf("X1: %d\t Y1: %d\t W1: %d\t H1: %d\n", lst->srect.x, lst->srect.y, lst->srect.w, lst->srect.h);
+            SDL_RenderCopyEx(renderer, lst->textura, NULL, &lst->rect, lst->angulo, NULL, SDL_FLIP_NONE);
         }
         else//(lst->tipo == 2) - Espelhar
         {
-            lst->drect.x += lst->dx;
-            lst->drect.y += lst->dy;
-            SDL_RenderCopyEx(renderer, lst->textura, &lst->srect, &lst->drect, lst->angulo, NULL, SDL_FLIP_HORIZONTAL);   
+            lst->rect.x += lst->dx;
+            lst->rect.y += lst->dy;
+
+            if(lst->cooldownFlip > 0 && lst->cooldownFlip <= 20)
+                SDL_RenderCopyEx(renderer, lst->textura, NULL, &lst->rect, lst->angulo, NULL, SDL_FLIP_NONE);
+            else if(lst->cooldownFlip > 20 && lst->cooldownFlip <= 40)
+                SDL_RenderCopyEx(renderer, lst->textura, NULL, &lst->rect, lst->angulo, NULL, SDL_FLIP_HORIZONTAL); 
+
+            if(lst->cooldownFlip > 0)
+                lst->cooldownFlip--;
+            else
+                lst->cooldownFlip = 40;
+
         }
     }
     
     return inimigos;
 }
+
+// void colisao(Jogador *jogador, Inimigo* inimigos)
+// {
+
+// }
+
+//Inimigo
+// int x1, x2, y1, y2;
+
+// x1 = lst->drect.x;
+// x2 = lst->drect.x + ldt->drect.w;
+// y1 = lst->drect.y;
+// y2 = lst->drect.y + ldt->drect.h;
+
+// if(x1 < 0)
+// {
+//     lst->drect.x = largura-lst->drect.w;
+// }
+// if(x2 > largura)
+// {
+//     lst->drect.x = 0;
+// }
+// if(y1 < 0)
+// {
+//     lst->drect.y = altura-lst->drect.h;
+// }
+// if(y2 > altura)
+// {
+//     lst->drect.y = 0;
+// }
+
+//SDL_Rect aux1 = {200,200,tamanhoX,tamanhoY};
+//SDL_Rect aux2 = {200,200,tamanhoX,tamanhoY};
+//SDL_Rect aux3 = {200,200,tamanhoX,tamanhoY};
+//SDL_Rect aux4 = {200,200,tamanhoX,tamanhoY};
