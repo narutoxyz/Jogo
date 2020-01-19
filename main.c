@@ -34,6 +34,7 @@ typedef struct info
     int numMaxInimigos;
     int numAtualInimigos;
     int cooldownSpawn;
+    int numeroSpawn;
     SDL_Texture *textura0;
     SDL_Texture *textura1;
     SDL_Texture *textura2;
@@ -85,10 +86,10 @@ void moverNave(SDL_Renderer *renderer, Jogador *jogador);
 Tiro* atirar(Jogador *jogador, Tiro *tiros, SDL_Texture *texturaTiro);
 Tiro* moverTiros(SDL_Renderer *renderer, Tiro *tiros);
 
-Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture *texturaInimigo);
+Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, int tipo);
 Inimigo* moverInimigos(SDL_Renderer *renderer, InfoInimigo *infoInimigo, Inimigo* inimigos);
 
-void colisao(Jogador *jogador, Inimigo* inimigos, Tiro* tiros);
+void colisao(Jogador* jogador,InfoInimigo* infoInimigo, Inimigo* inimigos, Tiro* tiros);
 
 void resetJogo(Jogador *jogador);
 
@@ -119,10 +120,13 @@ int main(int argc, char *argv[])
     TTF_Font *fonteStarWars = TTF_OpenFont("letras/Starjedi.ttf", 52);
     TTF_Font *titulo = TTF_OpenFont("letras/Starjout.ttf", 60);
     TTF_Font *fontePontuacao = TTF_OpenFont("letras/Robotica.ttf", 48);
+    TTF_Font *fonteGameOver = TTF_OpenFont("letras/PixelCaps.ttf", 60);
+    TTF_Font *fontePixel = TTF_OpenFont("letras/PixelCaps.ttf", 48);
 
-    SDL_Color verde = {7,224,71};
-    SDL_Color amarelo = {233,225,0};
-    SDL_Color branco = {255,255,255};
+    SDL_Color verde = {7,224,71,255};
+    SDL_Color amarelo = {233,225,0,255};
+    SDL_Color branco = {255,255,255,255};
+    SDL_Color preto = {0,0,0,255};
 
     SDL_Event evento;
     SDL_Surface *surface;
@@ -133,6 +137,7 @@ int main(int argc, char *argv[])
     Mix_Music *musicaJogo = Mix_LoadMUS("musicas/jogo.ogg");
     Mix_Music *musicaRecorde = Mix_LoadMUS("musicas/recorde.ogg");
     Mix_Music *musicaCredito = Mix_LoadMUS("musicas/credito.ogg");
+    Mix_Music *musicaFimDeJogo = Mix_LoadMUS("musicas/gameover.ogg")
 
     //Textos
 
@@ -166,6 +171,32 @@ int main(int argc, char *argv[])
     SDL_Rect aux5 = {(largura - 50)/2, 0, 50, surface->h/2};
     textoPontuacao->rect = aux5;
 
+        -------
+
+    Objeto *textoGameOver = (Objeto*) malloc(sizeof(Objeto));
+    surface = TTF_RenderText_Solid(fonteGameOver, "Game Over", branco);
+    textoGameOver->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect aux6 = {(largura - surface->w)/2, 50, surface->w, surface->h};
+    textoTitulo->rect = aux4;
+
+    Objeto *textoJogarNovamente = (Objeto*) malloc(sizeof(Objeto));
+    surface = TTF_RenderText_Solid(fontePixel, "Jogar Novamente", branco);
+    textoJogarNovamente->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect aux6 = {(largura - surface->w)/2, altura - 180, surface->w, surface->h};
+    textoTitulo->rect = aux4;
+
+    Objeto *textoYes = (Objeto*) malloc(sizeof(Objeto));
+    surface = TTF_RenderText_Solid(fontePixel, "Yes", branco);
+    textoYes->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect aux7 = {((largura - surface->w)/2)-50, altura - 100, surface->w, surface->h};
+    textoTitulo->rect = aux4;
+
+    Objeto *textoNo = (Objeto*) malloc(sizeof(Objeto));
+    surface = TTF_RenderText_Solid(fontePixel, "No", branco);
+    textoNo->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect aux8 = {((largura - surface->w)/2)+50, altura - 100, surface->w, surface->h};
+    textoTitulo->rect = aux4;
+
     //Fundos
     SDL_Texture *menu;
     surface = IMG_Load("imagens/menu.jpg");
@@ -196,15 +227,12 @@ int main(int argc, char *argv[])
     SDL_Texture *texturaTiro;
     surface = IMG_Load("imagens/tiro.png");
     texturaTiro = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Texture *texturaInimigo;
-    surface = IMG_Load("imagens/inimigos.png");
-    texturaInimigo = SDL_CreateTextureFromSurface(renderer, surface);
 
     Jogador *jogador = (Jogador*) malloc(sizeof(Jogador));
     surface = IMG_Load("imagens/nave.png");
     jogador->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux6 = {(largura - 46)/2, (altura - 80)/2, 46, 80}; //Ajeita o tamanho
-    jogador->rect = aux6;
+    SDL_Rect aux9 = {(largura - 46)/2, (altura - 80)/2, 46, 80}; //Ajeita o tamanho
+    jogador->rect = aux9;
     jogador->vida = 3;
     jogador->pontuacao = 0;
     jogador->angulo = 0.0f;
@@ -218,6 +246,7 @@ int main(int argc, char *argv[])
     infoInimigo->numMaxInimigos = 5;
     infoInimigo->numAtualInimigos = 0;
     infoInimigo->cooldownSpawn = 200;
+    infoInimigo->numeroSpawn = 2;
     surface = IMG_Load("imagens/inimigo0.png");
     infoInimigo->textura0 = SDL_CreateTextureFromSurface(renderer, surface);
     surface = IMG_Load("imagens/inimigo1.png");
@@ -241,10 +270,13 @@ int main(int argc, char *argv[])
             }
             case 1://Jogo
             {
+                if(jogador->vida == 0)
+                    escolha = 4;
+
                 //Musica + Fundo
                 iniciarJogo(renderer, jogo, musicaJogo, musicaAtual, jogador);
 
-                colisao(jogador, inimigos, tiros);
+                colisao(jogador, infoInimigo, inimigos, tiros);
 
                 //Mover nave
                 moverNave(renderer, jogador);
@@ -263,13 +295,15 @@ int main(int argc, char *argv[])
                 //Criar e mover inimigos
                 if(infoInimigo->cooldownSpawn == 0 && infoInimigo->numAtualInimigos < infoInimigo->numMaxInimigos)
                 {
-                    inimigos = spawnInimigos(infoInimigo, inimigos, texturaInimigo);
+                    inimigos = spawnInimigos(infoInimigo, inimigos, 3);
                     infoInimigo->cooldownSpawn = 200;
-                    printf("atual: %d\n", infoInimigo->numAtualInimigos);
+                    //printf("Nº de Inimigos: %d\n", infoInimigo->numAtualInimigos);
                 }
                 inimigos = moverInimigos(renderer, infoInimigo, inimigos);
                 if(infoInimigo->cooldownSpawn > 0)
                     infoInimigo->cooldownSpawn--;
+
+                printf("N de Inimigos: %d\n", infoInimigo->numAtualInimigos);
 
                 //Pontuação e vida
                 mostrarInfoJogo(renderer, jogador, vida, textoPontuacao, fontePontuacao, branco);
@@ -285,6 +319,10 @@ int main(int argc, char *argv[])
             {
                 iniciarCredito(renderer, credito, musicaCredito, musicaAtual);
                 break;
+            }
+            case 4://Fim de Jogo
+            {
+                //iniciarFimDeJogo(renderer, );
             }
         }
 
@@ -385,6 +423,10 @@ int main(int argc, char *argv[])
                 {
                     printf("Entrou Credito.\n");
                 }
+                if(escolha == 4)
+                {
+                    printf("Entro no Fim de Jogo");
+                }
             }
         }
 
@@ -400,8 +442,6 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-
-//void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, SDL_Texture *textura, Mix_Music *musicaMenu)
 
 void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int *musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu)
 {
@@ -508,6 +548,54 @@ void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *mus
 
     *musicaAtual = 3;
 }
+
+void iniciarFimDeJogo(SDL_Renderer *renderer, SDL_Texture *textoGameOver, SDL_Texture *textoJogarNovamente, SDL_Texture *textoYes, SDL_Texture *textoNo, Mix_Music *musicaFimDeJogo, int *musicaAtual, Jogador* jogador,int opcao, SDL_Color preto, SDL_Color verde)
+{
+    if(*musicaAtual != 4)
+    {
+        Mix_PlayMusic(musicaFimDeJogo, -1);
+    }
+
+    SDL_SetRenderDrawColor(renderer, preto);
+
+    SDL_RenderCopy(renderer, textoGameOver->textura, NULL, &textoTitulo->rect);
+    SDL_RenderCopy(renderer, textoJogarNovamente->textura, NULL, &textoPlay->rect);
+    SDL_RenderCopy(renderer, textoYes->textura, NULL, &textoTitulo->rect);
+    SDL_RenderCopy(renderer, textoNo->textura, NULL, &textoPlay->rect);
+
+    //Onde está a selecao? No Nome, no Yes, no No.
+    switch(opcao)
+    {
+        case 0://Nome
+        {
+
+
+            break;
+        }
+        case 1://Yes
+        {
+            Objeto *textoYes = (Objeto*) malloc(sizeof(Objeto));
+            surface = TTF_RenderText_Solid(fontePixel, "Yes", branco);
+            textoYes->textura = SDL_CreateTextureFromSurface(renderer, surface);
+            SDL_Rect aux7 = {((largura - surface->w)/2)-50, altura - 100, surface->w, surface->h};
+            textoTitulo->rect = aux4;
+
+            Objeto *textoNo = (Objeto*) malloc(sizeof(Objeto));
+            surface = TTF_RenderText_Solid(fontePixel, "No", branco);
+            textoNo->textura = SDL_CreateTextureFromSurface(renderer, surface);
+            SDL_Rect aux8 = {((largura - surface->w)/2)+50, altura - 100, surface->w, surface->h};
+            textoTitulo->rect = aux4;
+        }
+        case 2://No
+        {
+
+        }
+    }
+
+
+    *musicaAtual = 4;
+}
+
 
 //Altera os valores do rect
 void moverNave(SDL_Renderer *renderer, Jogador *jogador)
@@ -752,13 +840,18 @@ void mostrarInfoJogo(SDL_Renderer *renderer, Jogador *jogador, Objeto *vida, Obj
 }
 
 //Cria inimigos se a quantidade for menor que x
-Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture *texturaInimigo)
+Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, int tipo)
 {   
     //Se o cooldown estiver em 0 e tiver menos que o numMaxInimigos ...
 
     //Criamos um inimigo
     Inimigo* inimigo = (Inimigo*) malloc(sizeof(Inimigo));
-    inimigo->tipo = rand() % 3;
+    
+    if(tipo == 3)//Cria aleatóriamente
+        inimigo->tipo = rand() % 3;
+    else//Cria um tipo específico
+        inimigo->tipo = tipo;
+
     inimigo->lado = rand() % 4; //lado que o inimigo aparece.
     inimigo->angulo = 0;
     inimigo->flip = 0;
@@ -774,7 +867,7 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture 
     //Escolha da textura
     switch(inimigo->tipo)
     {
-        case 0://Maior
+        case 2://Maior
         {
             tamanhoX = 80;
             tamanhoY = 80;
@@ -790,7 +883,7 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, SDL_Texture 
             inimigo->pontos = 2;
             break;
         }
-        case 2://Pequeno
+        case 0://Pequeno
         {
             tamanhoX = 40;
             tamanhoY = 40;
@@ -935,7 +1028,7 @@ Inimigo* moverInimigos(SDL_Renderer *renderer, InfoInimigo *infoInimigo, Inimigo
     for(lst = inimigos; lst != NULL; lst = lst->prox)
     {
         printf("3\n");
-        if(lst->tipo == 0 || lst->tipo == 1) //rotacionar
+        if(lst->tipo == 2 || lst->tipo == 1) //rotacionar
         {
             lst->angulo = (lst->angulo+5) % 360;
 
@@ -944,7 +1037,7 @@ Inimigo* moverInimigos(SDL_Renderer *renderer, InfoInimigo *infoInimigo, Inimigo
             //printf("X1: %d\t Y1: %d\t W1: %d\t H1: %d\n", lst->srect.x, lst->srect.y, lst->srect.w, lst->srect.h);
             SDL_RenderCopyEx(renderer, lst->textura, NULL, &lst->rect, lst->angulo, NULL, SDL_FLIP_NONE);
         }
-        else//(lst->tipo == 2) - Espelhar
+        else//(lst->tipo == 0) - Espelhar
         {
             lst->rect.x += lst->dx;
             lst->rect.y += lst->dy;
@@ -965,11 +1058,12 @@ Inimigo* moverInimigos(SDL_Renderer *renderer, InfoInimigo *infoInimigo, Inimigo
     return inimigos;
 }
 
-void colisao(Jogador *jogador, Inimigo* inimigos, Tiro* tiros)
+void colisao(Jogador* jogador,InfoInimigo* infoInimigo, Inimigo* inimigos, Tiro* tiros)
 {
     Inimigo* lstI;
     Tiro* lstT;
     int colidiu = 1;
+    int i;
 
     //Só verifica se ambos não forem NULL
     if(inimigos != NULL && tiros != NULL)
@@ -1005,8 +1099,19 @@ void colisao(Jogador *jogador, Inimigo* inimigos, Tiro* tiros)
                 {
                     lstT->visivel = 0; //O tiro some
                     lstI->visivel = 0; //O inimigo some
+                    infoInimigo->numAtualInimigos--;//Diminui a quantidade de inimigos em -1
                     //O jogador recebe a pontuação de acordo com o tipo de inimigo atingido.
                     jogador->pontuacao += lstI->pontos;
+
+                    //Spawnar outros menores
+                    if(lstI->tipo != 0)
+                    {
+                        for(i = 0; i < infoInimigo->numeroSpawn; i++)
+                        {
+                            spawnInimigos(infoInimigo, inimigos, lstI->tipo -1);
+                        }
+                    }
+                        
                 }
 
                 colidiu = 1;
@@ -1045,6 +1150,7 @@ void colisao(Jogador *jogador, Inimigo* inimigos, Tiro* tiros)
             if(colidiu == 1)
             {
                 lstI->visivel = 0; //O inimigo some
+                infoInimigo->numAtualInimigos--;//Diminui a quantidade de inimigos em -1
                 //O jogador recebe a pontuação de acordo com o tipo de inimigo atingido.
                 jogador->pontuacao += lstI->pontos;
                 //O jogador perde uma vida
@@ -1052,6 +1158,14 @@ void colisao(Jogador *jogador, Inimigo* inimigos, Tiro* tiros)
                 //O jogador é teleportado para o meio do jogo, ou um tempo de respawn
                 SDL_Rect aux = {(largura - jogador->rect.w)/2, (altura - jogador->rect.h)/2, jogador->rect.w, jogador->rect.h};
                 jogador->rect = aux;
+
+                if(lstI->tipo != 0)
+                {
+                    for(i = 0; i < infoInimigo->numeroSpawn; i++)
+                    {
+                        spawnInimigos(infoInimigo, inimigos, lstI->tipo -1);
+                    }
+                }
             }
 
             colidiu = 1;
