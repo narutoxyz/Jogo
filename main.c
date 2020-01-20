@@ -49,8 +49,9 @@ typedef struct jogador
     int cooldownTiro;
     int dx;
     int dy;
+    char* nome;
     float angulo;
-    char *nome;
+    int empty;
     SDL_Texture *textura;
     SDL_Rect rect;
 }Jogador;
@@ -73,6 +74,18 @@ struct tiro
     Tiro *prox;
 };
 
+typedef struct inforank
+{
+    int numRanqueados;
+    int numRanks;
+}InfoRank;
+
+typedef struct rank
+{
+    char nome[30];
+    int pontuacao;
+}Rank;
+
 //Funções
 void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int *musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu, Mix_Chunk* somSelect, int* efeitoSonoro);
 void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual, Jogador* jogador);
@@ -94,11 +107,24 @@ void colisao(Jogador* jogador,InfoInimigo* infoInimigo, Inimigo* inimigos, Tiro*
 void iniciarFimDeJogo(SDL_Renderer *renderer, Objeto *textoGameOver, Objeto *textoNome, Objeto *textoJogarNovamente, Objeto *textoYes, Objeto *textoNo, Mix_Music *musicaFimDeJogo, int *musicaAtual, Jogador* jogador, int opcaoFimDeJogo, TTF_Font *fontePixel, SDL_Color verde, Mix_Chunk* somSelect, int* efeitoSonoro);
 void resetJogo(Jogador *jogador);
 
+char* escrever(Jogador *jogador);
+void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FILE* recorde);
+Rank* compararRanks(cont void* a, cont void* b);
+void mostrarRanking(Renderer* renderer, Rank* ranking, InfoRank* infoRank, Objeto* textoRecorde, TTF_Font *fonteRecorde, SDL_Color branco);
+
 //Funções - Auxiliares
 float angleToRad(float angulo);
 
 int main(int argc, char *argv[])
 {
+    //ARQUIVOS
+    FILE* recorde = fopen("recordes.dat", "r+b");
+    if(recorde == NULL)
+    {
+        printf("Erro: problema ao abrir o recorde");
+        return 0;
+    }
+
     //VARIAVEIS SIMPLES
     int jogando = 1;
     int escolha = 0; //0-Menu, 1-Jogo, 2-Recorde, 3-Creditos
@@ -125,8 +151,9 @@ int main(int argc, char *argv[])
     TTF_Font *fonteStarWars = TTF_OpenFont("letras/Starjedi.ttf", 52);
     TTF_Font *titulo = TTF_OpenFont("letras/Starjout.ttf", 60);
     TTF_Font *fontePontuacao = TTF_OpenFont("letras/Robotica.ttf", 48);
-    TTF_Font *fonteGameOver = TTF_OpenFont("letras/PixelCaps.ttf", 60);
-    TTF_Font *fontePixel = TTF_OpenFont("letras/PixelCaps.ttf", 48);
+    TTF_Font *fonteGameOver = TTF_OpenFont("letras/PixelCaps.ttf", 36);
+    TTF_Font *fontePixel = TTF_OpenFont("letras/PixelCaps.ttf", 32);
+    TTF_Font *fonteRecorde = TTF_OpenFont("letras/AnimeAce.ttf", 24);
 
     SDL_Color verde = {7,224,71,255};
     SDL_Color amarelo = {233,225,0,255};
@@ -181,18 +208,23 @@ int main(int argc, char *argv[])
     SDL_Rect aux5 = {(largura - 50)/2, 0, 50, surface->h/2};
     textoPontuacao->rect = aux5;
 
+    Objeto *textoRecorde = (Objeto*) malloc(sizeof(Objeto));
+    SDL_Rect aux12 = {(largura - surface->w)/2, 100, surface->w, surface->h};
+    textoRecorde->rect = aux12;
+
+
     //Tela de Fim
 
     Objeto *textoGameOver = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(fonteGameOver, "Game Over", branco);
     textoGameOver->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux6 = {(largura - surface->w)/2, 50, surface->w, surface->h};
+    SDL_Rect aux6 = {(largura - surface->w)/2, 100, surface->w, surface->h};
     textoGameOver->rect = aux6;
 
     Objeto *textoNome = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(fontePixel, "Nome: ", branco);
     textoGameOver->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux7 = {50, 150, surface->w, surface->h};
+    SDL_Rect aux7 = {50, 200, surface->w, surface->h};
     textoNome->rect = aux7;
 
     Objeto *textoJogarNovamente = (Objeto*) malloc(sizeof(Objeto));
@@ -204,13 +236,13 @@ int main(int argc, char *argv[])
     Objeto *textoYes = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(fontePixel, "Yes", branco);
     textoYes->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux9 = {((largura - surface->w)/2)-50, altura - 100, surface->w, surface->h};
+    SDL_Rect aux9 = {((largura - surface->w)/2)-100, altura - 100, surface->w, surface->h};
     textoYes->rect = aux9;
 
     Objeto *textoNo = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(fontePixel, "No", branco);
     textoNo->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux10 = {((largura - surface->w)/2)+50, altura - 100, surface->w, surface->h};
+    SDL_Rect aux10 = {((largura - surface->w)/2)+100, altura - 100, surface->w, surface->h};
     textoNo->rect = aux10;
 
     //Fundos
@@ -245,18 +277,19 @@ int main(int argc, char *argv[])
     texturaTiro = SDL_CreateTextureFromSurface(renderer, surface);
 
     Jogador *jogador = (Jogador*) malloc(sizeof(Jogador));
+    jogador->nome = (char*) malloc(sizeof(char)*30);
     surface = IMG_Load("imagens/nave.png");
     jogador->textura = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_Rect aux11 = {(largura - 46)/2, (altura - 80)/2, 46, 80}; //Ajeita o tamanho
     jogador->rect = aux11;
-    jogador->vida = 3;
+    jogador->vida = 0;
     jogador->pontuacao = 0;
     jogador->angulo = 0.0f;
     jogador->velocidade = 5;
     jogador->cooldownTiro = 0;
     jogador->dx = 0;
     jogador->dy = 0;
-    jogador->nome = (char*) malloc(sizeof(char)*30);
+    jogador->empty = 0;
 
     InfoInimigo *infoInimigo = (InfoInimigo*) malloc(sizeof(InfoInimigo));
     infoInimigo->numMaxInimigos = 5;
@@ -270,8 +303,14 @@ int main(int argc, char *argv[])
     surface = IMG_Load("imagens/inimigo2.png");
     infoInimigo->textura2 = SDL_CreateTextureFromSurface(renderer, surface);
 
-
     Inimigo *inimigos;
+
+    //Talvez tenha que ler essa info do arquivo
+    InfoRank* infoRank = (InfoRank*) malloc(sizeof(InfoRank));
+    infoRank->numRanqueados = 0;
+    infoRank->numRanks = 10;
+
+    Rank ranking[infoRank->numRanks];
 
 	while(jogando == 1)
     {
@@ -286,8 +325,11 @@ int main(int argc, char *argv[])
             }
             case 1://Jogo
             {
-                if(jogador->vida == 0)
+                if(jogador->vida == 0)// break AQUI
+                {
                     escolha = 4;
+                    break;
+                }
 
                 //Musica + Fundo
                 iniciarJogo(renderer, jogo, musicaJogo, musicaAtual, jogador);
@@ -403,7 +445,7 @@ int main(int argc, char *argv[])
                     }
                     if(evento.key.keysym.sym == SDLK_DOWN)
                     {
-                        if(opcaoMenu + 1 <=2 )
+                        if(opcaoMenu + 1 <= 2)
                         {
                             opcaoMenu = opcaoMenu+1;
                             *efeitoSonoro = 1;
@@ -441,22 +483,48 @@ int main(int argc, char *argv[])
                 {
                     printf("Entrou Credito.\n");
                 }
-                if(escolha == 4)
+                if(escolha == 4) //Fim de Jogo
                 {
                     printf("Entro no Fim de Jogo");
 
+                    //Quando terminar de escrever o Yes ficará verde.
                     if(opcaoFimDeJogo != 0)
                     {
-                        if(evento.key.keysym.sym == SDLK_RIGHT)
-                        {
-                            opcaoFimDeJogo = 2;
-                        }
                         if(evento.key.keysym.sym == SDLK_LEFT)
                         {
                             opcaoFimDeJogo = 1;
                         }
+                        if(evento.key.keysym.sym == SDLK_RIGHT)
+                        {
+                            opcaoFimDeJogo = 2;
+                        }
+                        if(evento.key.keysym.sym == SDLK_RETURN || evento.key.keysym.sym == SDLK_KP_ENTER)
+                        {
+                            if(opcaoFimDeJogo == 1) //Jogar Novamente
+                            {
+                                //Precisa salvar os dados do jogador, caso ele tenha conseguido uma pontuação maior do que os top 10
+                                /*Lê: A quantidade de jogadores salvos, se for abaixo de 10 salvar na posição vazia, ordenar o vetor
+                                e escrever no arquivo. Caso sejam 10 ranquados, comparamos a pontuação do jogador atual com a pontuação
+                                do ultimo ranqueado do vetor. Dai se a pontuação do ranqueado for maior do que a do novo jogador, nada
+                                fazemos. Entretanto, caso ela seja menor, vamos substituir o nome e a pontuação do ranquedo pelos do 
+                                jogador. Por fim, salvamos no arquivo*/ 
+                                salvarDadosJogador(infoRank, ranking, jogador);
+                                resetJogo(jogador);
+                                escolha = 1;
+                            }
+                            else if(opcaoFimDeJogo == 2) //Voltar ao Menu
+                            {
+                                //Precisa salvar os dados do jogador, caso ele tenha conseguido uma pontuação maior do que os top 10
+                                salvarDadosJogador(infoRank, ranking, jogador);
+                                resetJogo(jogador); //Reseta os dados do jogador, para uma nova partida.
+                                escolha = 0;
+                            }
+                        }
                     }
-
+                    else//Ainda precisa escrever
+                    {
+                        opcaoFimDeJogo = escrever(jogador);
+                    }
                 }
             }
         }
@@ -600,12 +668,8 @@ void iniciarFimDeJogo(SDL_Renderer *renderer, Objeto *textoGameOver, Objeto *tex
     //Onde está a selecao? No Nome, no Yes, no No.
     switch(opcaoFimDeJogo)
     {
-        case 0://Nome
-        {
-
-
-            break;
-        }
+        //Se for 0, ainda está escrevendo, então Yes/No estão brancos
+        //Vamos mudar para 1 quando terminar de escrever
         case 1://Yes
         {
             Objeto *textoYes = (Objeto*) malloc(sizeof(Objeto));
@@ -626,10 +690,10 @@ void iniciarFimDeJogo(SDL_Renderer *renderer, Objeto *textoGameOver, Objeto *tex
     SDL_RenderCopy(renderer, textoYes->textura, NULL, &textoYes->rect);
     SDL_RenderCopy(renderer, textoNo->textura, NULL, &textoNo->rect);
 
-    if(*efeitoSonoro == 1)
-    {
-
-    }
+    // if(*efeitoSonoro == 1)
+    // {
+    //     Mix_PlayChannel(-1, somSelect, 0);
+    // }
 
 
 
@@ -747,6 +811,9 @@ void resetJogo(Jogador *jogador)
     jogador->angulo = 0.0f;
     SDL_Rect aux = {(largura - jogador->rect.w)/2, (altura - jogador->rect.h)/2, jogador->rect.w, jogador->rect.h};
     jogador->rect = aux;
+
+    free(jogador->nome);
+    jogador->nome = (char*) malloc(sizeof(char)*30);
 }
 
 //Criar
@@ -1215,6 +1282,147 @@ void colisao(Jogador* jogador,InfoInimigo* infoInimigo, Inimigo* inimigos, Tiro*
         }
     }
 }
+
+int escrever(Jogador *jogador)
+{
+    SDL_Event evento;
+    int escrevendo = 1;
+
+    SDL_StartTextInput();
+
+    while(escrevendo)
+    {
+        while(SDL_PollEvent(&evento) != 0)
+        {
+            if(evento.type == SDL_QUIT)
+                escrevendo = 0;
+            else if(evento.type == SDL_TEXTINPUT)
+            {
+                jogador->nome[jogador->empty]
+                jogador->empty++;
+            }
+            else if(evento.key.keysym.sym == SDLK_BACKSPACE && jogador->empty > 0)
+            {
+                jogador->empty--;
+            }
+            if((evento.key.keysym.sym == SDLK_RETURN || evento.key.keysym.sym == SDLK_KP_ENTER) && jogador->empty > 0)
+            {
+                escrevendo = 0;
+            }
+        }
+    }
+
+    SDL_StopTextInput();
+
+    return 1; //opcaoFimDeJogo == 1
+}
+
+void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FILE* recorde)
+{
+    int i = 0;
+    rewind(recorde);
+
+    //Quantidade de ranqueados
+    while(!feof(recorde)) //enquanto não chegar no final do arquivo
+    {
+        fread(ranking[i].nome, sizeof(char), 30, recorde);
+        fread(ranking[i].pontuacao, sizeof(int), 1, recorde);
+
+        i++;
+    }
+
+    infoRank->numRanqueados = i+1;
+
+    //Se tiver posição vazia, então adicionamos, ordenamos o vetor e salvamos.
+    if(infoRank->numRanqueados < infoRank->numRanks)
+    {
+        strcpy(ranking[i].nome, jogador->nome);
+        ranking[i].pontuacao = jogador->pontuacao;
+
+    }
+    //Senão tiver posição vazia, então verificamos a pontuação do menor com a do jogador, se for menor
+    //alteramos os dados, ordenamos e salvamos
+    else
+    {
+        if(ranking[infoRank->numRanks-1].pontuacao < jogador->pontuacao)
+        {
+            strcpy(ranking[i].nome, jogador->nome);
+            ranking[i].pontuacao = jogador->pontuacao;
+        }
+    }
+
+    //Ordenar o vetor
+    qsort(ranking, infoRank->numRanqueados+1, sizeof(Rank), compararRanks);
+
+    rewind(recorde);
+
+    for(i = 0; i <= infoRank->numRanqueados; i++)
+    {
+        fwrite(ranking[i].nome, sizeof(char), 30, recorde);
+        fwrite(ranking[i].pontuacao, sizeof(int), 1, recorde);
+    }
+}
+
+Rank* compararRanks(cont void* a, cont void* b)
+{
+    if((Rank*)a.pontuacao > (Rank*)b.pontuacao)
+        return a;
+    else
+        return b;
+}
+
+void mostrarRanking(Renderer* renderer, Rank* ranking, InfoRank* infoRank, Objeto* textoRecorde, TTF_Font *fonteRecorde, SDL_Color branco)
+{
+    SDL_Surface* surface;
+    int i, espaco;
+    char res[60];
+    char pontos[10];
+
+    // Juntar o nome com o numero em um char só.
+    for(i = 0, espaco = 0; i <= infoRank->numRanqueados; i++, espaco += 10)
+    {
+        strcpy(res, ranking[i].nome); //copia o nome
+
+        strcpy(res, "---");
+
+        sprintf(pontos, "%d", ranking[i].pontuacao);
+
+        strcpy(res, pontos);
+
+        surface = TTF_RenderText_Solid(fonteRecorde, res, branco);
+        textoRecorde->textura = SDL_CreateTextureFromSurface(renderer, surface);
+        textoRecorde->rect.y += espaco;
+        SDL_RenderCopy(renderer, textoRecorde->textura, NULL, &textoRecorde->rect);
+    }
+}
+
+// int i, posicoes = 10, espaco = 5;
+//     char nome[50];
+//     char numero[10];
+//     // Juntar o nome com o numero em um char só.
+//     for(i = 0; i < posicoes; i++)
+//     {
+
+//     }
+
+// void ordenarRank(Jogador** jogadores, Jogador* jogador)
+// {
+//     int i;
+//     int posicoes = 10;
+//     int maior = 0;
+
+//     for(i = 0; i < posicoes; i++)
+//     {
+
+//     }
+    
+//     qsort(jogadores, posicoes,sizeof(Jogador*), compararJogadores);
+// }
+
+// void lerRank(InfoRank* infoRank)
+// {
+
+// }
 
 //Inimigo teleporta ao atingir as paredes
 // int x1, x2, y1, y2;
