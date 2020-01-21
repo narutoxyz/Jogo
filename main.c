@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
+#include <string.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
@@ -35,6 +36,7 @@ typedef struct info
     int numAtualInimigos;
     int cooldownSpawn;
     int numeroSpawn;
+    int velocidade;
     SDL_Texture *textura0;
     SDL_Texture *textura1;
     SDL_Texture *textura2;
@@ -51,6 +53,7 @@ typedef struct jogador
     int dy;
     char* nome;
     float angulo;
+    float velAngular;
     int empty;
     SDL_Texture *textura;
     SDL_Rect rect;
@@ -104,13 +107,13 @@ Inimigo* moverInimigos(SDL_Renderer *renderer, InfoInimigo *infoInimigo, Inimigo
 
 void colisao(Jogador* jogador,InfoInimigo* infoInimigo, Inimigo* inimigos, Tiro* tiros, Mix_Chunk* explosion);
 
-void iniciarFimDeJogo(SDL_Renderer *renderer, Objeto *textoGameOver, Objeto *textoNome, Objeto *textoJogarNovamente, Objeto *textoYes, Objeto *textoNo, Mix_Music *musicaFimDeJogo, int *musicaAtual, Jogador* jogador, int opcaoFimDeJogo, TTF_Font *fontePixel, SDL_Color verde, Mix_Chunk* somSelect, int* efeitoSonoro);
-void resetJogo(Jogador *jogador);
+void iniciarFimDeJogo(SDL_Renderer *renderer, Objeto *textoGameOver, Objeto *textoNome, Objeto *textoJogarNovamente, Objeto *textoYes, Objeto *textoNo, Mix_Music *musicaFimDeJogo, int *musicaAtual, Jogador* jogador, int opcaoFimDeJogo, TTF_Font *fontePixel, SDL_Color verde, SDL_Color branco, Mix_Chunk* somSelect, int* efeitoSonoro);
+void resetJogo(SDL_Renderer* renderer, Jogador *jogador, Objeto* textoNome, TTF_Font *fontePixel, SDL_Color branco);
 
-char* escrever(Jogador *jogador);
-void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FILE* recorde);
-Rank* compararRanks(cont void* a, cont void* b);
-void mostrarRanking(Renderer* renderer, Rank* ranking, InfoRank* infoRank, Objeto* textoRecorde, TTF_Font *fonteRecorde, SDL_Color branco);
+int escrever(SDL_Renderer* renderer, Jogador *jogador, TTF_Font *fontePixel, SDL_Color branco, Objeto *textoGameOver, Objeto *textoNome, Objeto *textoJogarNovamente, Objeto *textoYes, Objeto *textoNo);
+void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FILE* arqRecorde);
+int compararRanks(const void* a, const void* b);
+void mostrarRanking(SDL_Renderer* renderer, Rank* ranking, InfoRank* infoRank, Objeto* textoRank, TTF_Font *fonteRecorde, SDL_Color branco, FILE* arqRecorde);
 
 //Funções - Auxiliares
 float angleToRad(float angulo);
@@ -118,8 +121,8 @@ float angleToRad(float angulo);
 int main(int argc, char *argv[])
 {
     //ARQUIVOS
-    FILE* recorde = fopen("recordes.dat", "r+b");
-    if(recorde == NULL)
+    FILE* arqRecorde = fopen("recordes.dat", "r+b");
+    if(arqRecorde == NULL)
     {
         printf("Erro: problema ao abrir o recorde");
         return 0;
@@ -151,7 +154,7 @@ int main(int argc, char *argv[])
     TTF_Font *fonteStarWars = TTF_OpenFont("letras/Starjedi.ttf", 52);
     TTF_Font *titulo = TTF_OpenFont("letras/Starjout.ttf", 60);
     TTF_Font *fontePontuacao = TTF_OpenFont("letras/Robotica.ttf", 48);
-    TTF_Font *fonteGameOver = TTF_OpenFont("letras/PixelCaps.ttf", 36);
+    TTF_Font *fonteGameOver = TTF_OpenFont("letras/PixelCaps.ttf", 42);
     TTF_Font *fontePixel = TTF_OpenFont("letras/PixelCaps.ttf", 32);
     TTF_Font *fonteRecorde = TTF_OpenFont("letras/AnimeAce.ttf", 24);
 
@@ -208,9 +211,9 @@ int main(int argc, char *argv[])
     SDL_Rect aux5 = {(largura - 50)/2, 0, 50, surface->h/2};
     textoPontuacao->rect = aux5;
 
-    Objeto *textoRecorde = (Objeto*) malloc(sizeof(Objeto));
+    Objeto *textoRank = (Objeto*) malloc(sizeof(Objeto));
     SDL_Rect aux12 = {(largura - surface->w)/2, 100, surface->w, surface->h};
-    textoRecorde->rect = aux12;
+    textoRank->rect = aux12;
 
 
     //Tela de Fim
@@ -218,13 +221,13 @@ int main(int argc, char *argv[])
     Objeto *textoGameOver = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(fonteGameOver, "Game Over", branco);
     textoGameOver->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux6 = {(largura - surface->w)/2, 100, surface->w, surface->h};
+    SDL_Rect aux6 = {(largura - surface->w)/2, 50, surface->w, surface->h};
     textoGameOver->rect = aux6;
 
     Objeto *textoNome = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(fontePixel, "Nome: ", branco);
-    textoGameOver->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux7 = {50, 200, surface->w, surface->h};
+    textoNome->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect aux7 = {0, 180, surface->w, surface->h};
     textoNome->rect = aux7;
 
     Objeto *textoJogarNovamente = (Objeto*) malloc(sizeof(Objeto));
@@ -282,10 +285,11 @@ int main(int argc, char *argv[])
     jogador->textura = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_Rect aux11 = {(largura - 46)/2, (altura - 80)/2, 46, 80}; //Ajeita o tamanho
     jogador->rect = aux11;
-    jogador->vida = 0;
+    jogador->vida = 3;
     jogador->pontuacao = 0;
     jogador->angulo = 0.0f;
-    jogador->velocidade = 5;
+    jogador->velAngular = 10.0f;
+    jogador->velocidade = 10;
     jogador->cooldownTiro = 0;
     jogador->dx = 0;
     jogador->dy = 0;
@@ -294,8 +298,9 @@ int main(int argc, char *argv[])
     InfoInimigo *infoInimigo = (InfoInimigo*) malloc(sizeof(InfoInimigo));
     infoInimigo->numMaxInimigos = 5;
     infoInimigo->numAtualInimigos = 0;
-    infoInimigo->cooldownSpawn = 200;
+    infoInimigo->cooldownSpawn = 100;
     infoInimigo->numeroSpawn = 2;
+    infoInimigo->velocidade = 5;
     surface = IMG_Load("imagens/inimigo0.png");
     infoInimigo->textura0 = SDL_CreateTextureFromSurface(renderer, surface);
     surface = IMG_Load("imagens/inimigo1.png");
@@ -354,7 +359,7 @@ int main(int argc, char *argv[])
                 if(infoInimigo->cooldownSpawn == 0 && infoInimigo->numAtualInimigos < infoInimigo->numMaxInimigos)
                 {
                     inimigos = spawnInimigos(infoInimigo, inimigos, 3);
-                    infoInimigo->cooldownSpawn = 200;
+                    infoInimigo->cooldownSpawn = 100;
                     //printf("Nº de Inimigos: %d\n", infoInimigo->numAtualInimigos);
                 }
                 inimigos = moverInimigos(renderer, infoInimigo, inimigos);
@@ -371,6 +376,7 @@ int main(int argc, char *argv[])
             case 2://Recorde
             {
                 iniciarRecorde(renderer, recorde, musicaRecorde, musicaAtual);
+                mostrarRanking(renderer, ranking, infoRank, textoRank, fonteRecorde, branco, arqRecorde);
                 break;
             } 
             case 3://Créditos
@@ -380,7 +386,12 @@ int main(int argc, char *argv[])
             }
             case 4://Fim de Jogo
             {
-                iniciarFimDeJogo(renderer, textoGameOver, textoNome, textoJogarNovamente, textoYes, textoNo, musicaFimDeJogo, musicaAtual, jogador, opcaoFimDeJogo, fontePixel, verde, somSelect, efeitoSonoro);
+                iniciarFimDeJogo(renderer, textoGameOver, textoNome, textoJogarNovamente, textoYes, textoNo, musicaFimDeJogo, musicaAtual, jogador, opcaoFimDeJogo, fontePixel, verde, branco, somSelect, efeitoSonoro);
+                if(opcaoFimDeJogo == 0)
+                {
+                    printf("Escrevendo...\n");
+                    opcaoFimDeJogo = escrever(renderer, jogador, fontePixel, branco, textoGameOver, textoNome, textoJogarNovamente, textoYes, textoNo);
+                }
             }
         }
 
@@ -404,7 +415,8 @@ int main(int argc, char *argv[])
                 {
                     if(escolha == 1) //Se eu estava no jogo, então eu preciso resetar as variáveis.
                     {
-                        resetJogo(jogador);
+                        resetJogo(renderer, jogador, textoNome, fontePixel, branco);
+                        opcaoFimDeJogo = 0;
                     }
                     escolha = 0; //Volte ao menu
                 }
@@ -508,22 +520,20 @@ int main(int argc, char *argv[])
                                 do ultimo ranqueado do vetor. Dai se a pontuação do ranqueado for maior do que a do novo jogador, nada
                                 fazemos. Entretanto, caso ela seja menor, vamos substituir o nome e a pontuação do ranquedo pelos do 
                                 jogador. Por fim, salvamos no arquivo*/ 
-                                salvarDadosJogador(infoRank, ranking, jogador);
-                                resetJogo(jogador);
+                                salvarDadosJogador(infoRank, ranking, jogador, arqRecorde);
+                                resetJogo(renderer, jogador, textoNome, fontePixel, branco);
                                 escolha = 1;
+                                opcaoFimDeJogo = 0;
                             }
                             else if(opcaoFimDeJogo == 2) //Voltar ao Menu
                             {
                                 //Precisa salvar os dados do jogador, caso ele tenha conseguido uma pontuação maior do que os top 10
-                                salvarDadosJogador(infoRank, ranking, jogador);
-                                resetJogo(jogador); //Reseta os dados do jogador, para uma nova partida.
+                                salvarDadosJogador(infoRank, ranking, jogador, arqRecorde);
+                                resetJogo(renderer, jogador, textoNome, fontePixel, branco); //Reseta os dados do jogador, para uma nova partida.
                                 escolha = 0;
+                                opcaoFimDeJogo = 0;
                             }
                         }
-                    }
-                    else//Ainda precisa escrever
-                    {
-                        opcaoFimDeJogo = escrever(jogador);
                     }
                 }
             }
@@ -654,7 +664,7 @@ void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *mus
     *musicaAtual = 3;
 }
 
-void iniciarFimDeJogo(SDL_Renderer *renderer, Objeto *textoGameOver, Objeto *textoNome, Objeto *textoJogarNovamente, Objeto *textoYes, Objeto *textoNo, Mix_Music *musicaFimDeJogo, int *musicaAtual, Jogador* jogador, int opcaoFimDeJogo, TTF_Font *fontePixel, SDL_Color verde, Mix_Chunk* somSelect, int* efeitoSonoro)
+void iniciarFimDeJogo(SDL_Renderer *renderer, Objeto *textoGameOver, Objeto *textoNome, Objeto *textoJogarNovamente, Objeto *textoYes, Objeto *textoNo, Mix_Music *musicaFimDeJogo, int *musicaAtual, Jogador* jogador, int opcaoFimDeJogo, TTF_Font *fontePixel, SDL_Color verde, SDL_Color branco, Mix_Chunk* somSelect, int* efeitoSonoro)
 {
     SDL_Surface *surface;
 
@@ -672,15 +682,19 @@ void iniciarFimDeJogo(SDL_Renderer *renderer, Objeto *textoGameOver, Objeto *tex
         //Vamos mudar para 1 quando terminar de escrever
         case 1://Yes
         {
-            Objeto *textoYes = (Objeto*) malloc(sizeof(Objeto));
             surface = TTF_RenderText_Solid(fontePixel, "Yes", verde);
             textoYes->textura = SDL_CreateTextureFromSurface(renderer, surface);
+            surface = TTF_RenderText_Solid(fontePixel, "No", branco);
+            textoNo->textura = SDL_CreateTextureFromSurface(renderer, surface);
+            break;
         }
         case 2://No
         {
-            Objeto *textoNo = (Objeto*) malloc(sizeof(Objeto));
             surface = TTF_RenderText_Solid(fontePixel, "No", verde);
             textoNo->textura = SDL_CreateTextureFromSurface(renderer, surface);
+            surface = TTF_RenderText_Solid(fontePixel, "Yes", branco);
+            textoYes->textura = SDL_CreateTextureFromSurface(renderer, surface);
+            break;
         }
     }
 
@@ -695,16 +709,12 @@ void iniciarFimDeJogo(SDL_Renderer *renderer, Objeto *textoGameOver, Objeto *tex
     //     Mix_PlayChannel(-1, somSelect, 0);
     // }
 
-
-
     *musicaAtual = 4;
 }
-
 
 //Altera os valores do rect
 void moverNave(SDL_Renderer *renderer, Jogador *jogador)
 {
-    float angulo = 5.0f;
     float radiano;
 
     //Calcula o dx e dy
@@ -784,12 +794,12 @@ void moverNave(SDL_Renderer *renderer, Jogador *jogador)
         }
         case 1: //Ir para direita
         {
-            jogador->angulo = (int)(jogador->angulo + angulo)%360;
+            jogador->angulo = (int)(jogador->angulo + jogador->velAngular)%360;
             break;
         }
         case 2: //Ir para esquerda
         {
-            jogador->angulo = (int)((jogador->angulo - angulo)+360) % 360;
+            jogador->angulo = (int)((jogador->angulo - jogador->velAngular)+360) % 360;
             break;
         }
     }
@@ -804,13 +814,21 @@ float angleToRad(float angulo)
 }
 
 //Precisa melhorar ...
-void resetJogo(Jogador *jogador)
+void resetJogo(SDL_Renderer* renderer, Jogador *jogador, Objeto* textoNome, TTF_Font *fontePixel, SDL_Color branco)
 {
+    SDL_Surface* surface;
+
     jogador->vida = 3;
+    jogador->empty = 0;
     jogador->pontuacao = 0;
     jogador->angulo = 0.0f;
     SDL_Rect aux = {(largura - jogador->rect.w)/2, (altura - jogador->rect.h)/2, jogador->rect.w, jogador->rect.h};
     jogador->rect = aux;
+
+    surface = TTF_RenderText_Solid(fontePixel, "Nome: ", branco);
+    textoNome->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect aux2 = {0, 180, surface->w, surface->h};
+    textoNome->rect = aux2;
 
     free(jogador->nome);
     jogador->nome = (char*) malloc(sizeof(char)*30);
@@ -885,6 +903,8 @@ Tiro* moverTiros(SDL_Renderer *renderer, Tiro *tiros)
                     temp = lst;
                     if(lst->prox == NULL)
                         tiros = NULL;
+                    else
+                        tiros = lst->prox;
                     lst = lst->prox;
                     free(temp);
                     continue;
@@ -895,6 +915,7 @@ Tiro* moverTiros(SDL_Renderer *renderer, Tiro *tiros)
                     {
                         ant->prox = NULL;
                         free(lst);
+                        lst = NULL;
                     }
                     else //meio
                     {
@@ -1003,7 +1024,7 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, int tipo)
     }
 
     int aux, pos;
-    int deslocamento = 5;
+    //int deslocamento = 5;
 
     //Surgimento
     switch(inimigo->lado)
@@ -1015,7 +1036,7 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, int tipo)
             SDL_Rect aux1 = {pos,0,tamanhoX,tamanhoY};
             inimigo->rect = aux1;
 
-            inimigo->dy = deslocamento;
+            inimigo->dy = infoInimigo->velocidade;
             break;
         }
         case 1://Baixo
@@ -1025,7 +1046,7 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, int tipo)
             SDL_Rect aux2 = {pos,altura,tamanhoX,tamanhoY};
             inimigo->rect = aux2;
 
-            inimigo->dy = -(deslocamento);
+            inimigo->dy = -(infoInimigo->velocidade);
             break;
         }
         case 2://Direita
@@ -1035,7 +1056,7 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, int tipo)
             SDL_Rect aux3 = {largura,pos,tamanhoX,tamanhoY};
             inimigo->rect = aux3;
 
-            inimigo->dx = -(deslocamento);
+            inimigo->dx = -(infoInimigo->velocidade);
             break;
         }
         case 3://Esquerda
@@ -1045,7 +1066,7 @@ Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, int tipo)
             SDL_Rect aux4 = {0,pos,tamanhoX,tamanhoY};
             inimigo->rect = aux4;
 
-            inimigo->dx = deslocamento;
+            inimigo->dx = infoInimigo->velocidade;
             break;
         }
     }
@@ -1103,22 +1124,29 @@ Inimigo* moverInimigos(SDL_Renderer *renderer, InfoInimigo *infoInimigo, Inimigo
             printf("2.1\n");
             if(ant == NULL) //Nó inicial
             {
+                printf("2.2\n");
                 temp = lst;
                 if(lst->prox == NULL)
                     inimigos = NULL;
+                else
+                    inimigos = lst->prox;
                 lst = lst->prox;
                 free(temp);
                 continue;
             }
             else //ant != NullNó não inicial
             {
+                printf("2.3\n");
                 if(lst->prox == NULL) //ultimo
                 {
+                    printf("2.4\n");
                     ant->prox = NULL;
                     free(lst);
+                    lst = NULL;
                 }
                 else //meio
                 {
+                    printf("2.5\n");
                     temp = lst;
                     ant->prox = lst->prox;
                     lst = lst->prox;
@@ -1172,7 +1200,7 @@ void colisao(Jogador* jogador,InfoInimigo* infoInimigo, Inimigo* inimigos, Tiro*
     Inimigo* lstI;
     Tiro* lstT;
     int colidiu = 1;
-    //int i;
+    int i;
 
     //Só verifica se ambos não forem NULL
     if(inimigos != NULL && tiros != NULL)
@@ -1214,13 +1242,13 @@ void colisao(Jogador* jogador,InfoInimigo* infoInimigo, Inimigo* inimigos, Tiro*
                     jogador->pontuacao += lstI->pontos;
 
                     //Spawnar outros menores
-                    // if(lstI->tipo != 0)
-                    // {
-                    //     for(i = 0; i < infoInimigo->numeroSpawn; i++)
-                    //     {
-                    //         spawnInimigos(infoInimigo, inimigos, lstI->tipo -1);
-                    //     }
-                    // }      
+                    if(lstI->tipo != 0)
+                    {
+                        for(i = 0; i < infoInimigo->numeroSpawn; i++)
+                        {
+                            spawnInimigos(infoInimigo, inimigos, lstI->tipo-1);
+                        }
+                    }      
                 }
 
                 colidiu = 1;
@@ -1269,13 +1297,13 @@ void colisao(Jogador* jogador,InfoInimigo* infoInimigo, Inimigo* inimigos, Tiro*
                 SDL_Rect aux = {(largura - jogador->rect.w)/2, (altura - jogador->rect.h)/2, jogador->rect.w, jogador->rect.h};
                 jogador->rect = aux;
 
-                // if(lstI->tipo != 0)
-                // {
-                //     for(i = 0; i < infoInimigo->numeroSpawn; i++)
-                //     {
-                //         spawnInimigos(infoInimigo, inimigos, lstI->tipo -1);
-                //     }
-                // }
+                if(lstI->tipo != 0)
+                {
+                    for(i = 0; i < infoInimigo->numeroSpawn; i++)
+                    {
+                        spawnInimigos(infoInimigo, inimigos, lstI->tipo -1);
+                    }
+                }
             }
 
             colidiu = 1;
@@ -1283,55 +1311,93 @@ void colisao(Jogador* jogador,InfoInimigo* infoInimigo, Inimigo* inimigos, Tiro*
     }
 }
 
-int escrever(Jogador *jogador)
+int escrever(SDL_Renderer* renderer, Jogador *jogador, TTF_Font *fontePixel, SDL_Color branco, Objeto *textoGameOver, Objeto *textoNome, Objeto *textoJogarNovamente, Objeto *textoYes, Objeto *textoNo)
 {
     SDL_Event evento;
+    SDL_Surface* surface;
     int escrevendo = 1;
+
+    Objeto* textoJogador = (Objeto*) malloc(sizeof(Objeto));
+    surface = TTF_RenderText_Solid(fontePixel, "-----", branco);
+    textoJogador->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect aux = {180, 180, 0, surface->h};
+    textoJogador->rect = aux;
 
     SDL_StartTextInput();
 
     while(escrevendo)
     {
+        SDL_RenderClear(renderer);
+
+        SDL_SetRenderDrawColor(renderer, 0,0,0,255);
+        SDL_RenderCopy(renderer, textoGameOver->textura, NULL, &textoGameOver->rect);
+        SDL_RenderCopy(renderer, textoNome->textura, NULL, &textoNome->rect);
+        SDL_RenderCopy(renderer, textoJogarNovamente->textura, NULL, &textoJogarNovamente->rect);
+        SDL_RenderCopy(renderer, textoYes->textura, NULL, &textoYes->rect);
+        SDL_RenderCopy(renderer, textoNo->textura, NULL, &textoNo->rect);
+
         while(SDL_PollEvent(&evento) != 0)
         {
+            printf("Escrevendo 2.0 ...\n");
             if(evento.type == SDL_QUIT)
                 escrevendo = 0;
-            else if(evento.type == SDL_TEXTINPUT)
+            else if(evento.type == SDL_TEXTINPUT && evento.key.keysym.sym != SDLK_RIGHT && evento.key.keysym.sym != SDLK_UP && evento.key.keysym.sym != SDLK_DOWN && evento.key.keysym.sym != SDLK_LEFT)
             {
-                jogador->nome[jogador->empty]
+                printf("Mouse aqui\n\n");
+                jogador->nome[jogador->empty] = *evento.text.text;
+                //strcat(jogador->nome, evento.text.text);
                 jogador->empty++;
+                textoJogador->rect.w += 28;
             }
             else if(evento.key.keysym.sym == SDLK_BACKSPACE && jogador->empty > 0)
             {
                 jogador->empty--;
+                jogador->nome[jogador->empty] = ' ';
+                textoJogador->rect.w -= 28;
             }
             if((evento.key.keysym.sym == SDLK_RETURN || evento.key.keysym.sym == SDLK_KP_ENTER) && jogador->empty > 0)
             {
                 escrevendo = 0;
             }
         }
+
+        surface = TTF_RenderText_Solid(fontePixel, jogador->nome, branco);
+        textoJogador->textura = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_RenderCopy(renderer, textoJogador->textura, NULL, &textoJogador->rect);
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(1000/30);
     }
+
+    char nome[] = "Nome: ";
+    strcat(nome, jogador->nome); 
+
+    surface = TTF_RenderText_Solid(fontePixel, nome, branco);
+    textoNome->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    textoNome->rect.w += textoJogador->rect.w;
 
     SDL_StopTextInput();
 
     return 1; //opcaoFimDeJogo == 1
 }
 
-void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FILE* recorde)
+void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FILE* arqRecorde)
 {
     int i = 0;
-    rewind(recorde);
+    rewind(arqRecorde);
+
+    printf("Salvei\n");
 
     //Quantidade de ranqueados
-    while(!feof(recorde)) //enquanto não chegar no final do arquivo
+    while(0 >= fread(&ranking[i].nome, sizeof(char), 30, arqRecorde)) //enquanto não chegar no final do arquivo
     {
-        fread(ranking[i].nome, sizeof(char), 30, recorde);
-        fread(ranking[i].pontuacao, sizeof(int), 1, recorde);
+        fread(&ranking[i].pontuacao, sizeof(int), 1, arqRecorde);
+        printf("X X Nome: %s\tPontuacao: %d\n", ranking[i].nome, ranking[i].pontuacao);
 
         i++;
     }
 
-    infoRank->numRanqueados = i+1;
+    infoRank->numRanqueados = i;
 
     //Se tiver posição vazia, então adicionamos, ordenamos o vetor e salvamos.
     if(infoRank->numRanqueados < infoRank->numRanks)
@@ -1352,47 +1418,65 @@ void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FIL
     }
 
     //Ordenar o vetor
-    qsort(ranking, infoRank->numRanqueados+1, sizeof(Rank), compararRanks);
+    qsort(ranking, infoRank->numRanqueados, sizeof(Rank), compararRanks);
 
-    rewind(recorde);
+    rewind(arqRecorde);
 
     for(i = 0; i <= infoRank->numRanqueados; i++)
     {
-        fwrite(ranking[i].nome, sizeof(char), 30, recorde);
-        fwrite(ranking[i].pontuacao, sizeof(int), 1, recorde);
+        fwrite(&ranking[i].nome, sizeof(char), 30, arqRecorde);
+        fwrite(&ranking[i].pontuacao, sizeof(int), 1, arqRecorde);
     }
 }
 
-Rank* compararRanks(cont void* a, cont void* b)
+int compararRanks(const void* a, const void* b)
 {
-    if((Rank*)a.pontuacao > (Rank*)b.pontuacao)
-        return a;
-    else
-        return b;
+    if(((Rank*)a)->pontuacao > ((Rank*)b)->pontuacao)
+        return -1;
+
+    return 0;
 }
 
-void mostrarRanking(Renderer* renderer, Rank* ranking, InfoRank* infoRank, Objeto* textoRecorde, TTF_Font *fonteRecorde, SDL_Color branco)
+void mostrarRanking(SDL_Renderer* renderer, Rank* ranking, InfoRank* infoRank, Objeto* textoRank, TTF_Font *fonteRecorde, SDL_Color branco, FILE* arqRecorde)
 {
     SDL_Surface* surface;
-    int i, espaco;
+    int i = 0, espaco;
     char res[60];
     char pontos[10];
 
+    rewind(arqRecorde);
+
+    //Quantidade de ranqueados
+    while(0 >= fread(&ranking[i].nome, sizeof(char), 30, arqRecorde)) //enquanto não chegar no final do arquivo
+    {
+        fread(&ranking[i].pontuacao, sizeof(int), 1, arqRecorde);
+        printf("Nome: %s\tPontuacao: %d\n", ranking[i].nome, ranking[i].pontuacao);
+
+        i++;
+    }
+
+    infoRank->numRanqueados = i+1;
+
+    printf("Num: %d\n", infoRank->numRanqueados);
+
     // Juntar o nome com o numero em um char só.
-    for(i = 0, espaco = 0; i <= infoRank->numRanqueados; i++, espaco += 10)
+    for(i = 0, espaco = 0; i < infoRank->numRanqueados; i++, espaco += textoRank->rect.y+textoRank->rect.h+10)
     {
         strcpy(res, ranking[i].nome); //copia o nome
 
-        strcpy(res, "---");
+        strcat(res, "---");
 
         sprintf(pontos, "%d", ranking[i].pontuacao);
 
-        strcpy(res, pontos);
+        strcat(res, pontos);
+
+        printf("Nome: %s\n", res);
 
         surface = TTF_RenderText_Solid(fonteRecorde, res, branco);
-        textoRecorde->textura = SDL_CreateTextureFromSurface(renderer, surface);
-        textoRecorde->rect.y += espaco;
-        SDL_RenderCopy(renderer, textoRecorde->textura, NULL, &textoRecorde->rect);
+        textoRank->textura = SDL_CreateTextureFromSurface(renderer, surface);
+        textoRank->rect.y += espaco;
+        SDL_RenderCopy(renderer, textoRank->textura, NULL, &textoRank->rect);
+        SDL_Delay(1000/30);
     }
 }
 
