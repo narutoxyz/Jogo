@@ -99,10 +99,11 @@ typedef struct rank
 }Rank;
 
 //Funções
-void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int *musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu, Mix_Chunk* somSelect, int* efeitoSonoro);
+void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int *musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoInstrucao, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu, Mix_Chunk* somSelect, int* efeitoSonoro);
 void iniciarJogo(SDL_Renderer *renderer, SDL_Texture *jogo, Mix_Music *musicaJogo, int *musicaAtual, Jogador* jogador);
 void iniciarRecorde(SDL_Renderer *renderer, SDL_Texture *recorde, Mix_Music *musicaRecorde, int *musicaAtual);
 void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *musicaCredito, int *musicaAtual);
+void iniciarInstrucao(SDL_Renderer *renderer, SDL_Texture *instrucao, Mix_Music *musicaInstrucao, int *musicaAtual);
 
 //Funções - Jogo
 void mostrarInfoJogo(SDL_Renderer *renderer, Jogador *jogador, Objeto *vida, Objeto *textoPontuacao, TTF_Font *fontePontuacao, SDL_Color branco);
@@ -187,6 +188,7 @@ int main(int argc, char *argv[])
     Mix_Music *musicaRecorde = Mix_LoadMUS("musicas/recorde.ogg");
     Mix_Music *musicaCredito = Mix_LoadMUS("musicas/credito.ogg");
     Mix_Music *musicaFimDeJogo = Mix_LoadMUS("musicas/gameover.ogg");
+    Mix_Music *musicaInstrucao = Mix_LoadMUS("musicas/instrucao.ogg");
 
     //Efeitos Sonoros
 
@@ -196,10 +198,12 @@ int main(int argc, char *argv[])
 
     //Textos
 
+    int start = 120;
+
     Objeto *textoPlay = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(fonteStarWars, "Jogar", verde);
     textoPlay->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux1 = {(largura - surface->w)/2, (altura - surface->h)/2, surface->w, surface->h};
+    SDL_Rect aux1 = {(largura - surface->w)/2, start, surface->w, surface->h};
     textoPlay->rect = aux1;
 
     tam = surface->h;//Altura do texto
@@ -207,14 +211,20 @@ int main(int argc, char *argv[])
     Objeto *textoRecorde = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(fonteStarWars, "Recordes", verde);
     textoRecorde->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux2 = {(largura - surface->w)/2, tam+((altura - surface->h)/2), surface->w, surface->h};
+    SDL_Rect aux2 = {(largura - surface->w)/2, tam+start, surface->w, surface->h};
     textoRecorde->rect = aux2;
 
     Objeto *textoCredito = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(fonteStarWars, "Creditos", verde);
     textoCredito->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux3 = {(largura - surface->w)/2, 2*tam+((altura - surface->h)/2), surface->w, surface->h};
+    SDL_Rect aux3 = {(largura - surface->w)/2, 2*tam+start, surface->w, surface->h};
     textoCredito->rect = aux3;
+
+    Objeto *textoInstrucao = (Objeto*) malloc(sizeof(Objeto));
+    surface = TTF_RenderText_Solid(fonteStarWars, "instrucoes", verde);
+    textoInstrucao->textura = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect aux13 = {(largura - surface->w)/2, 3*tam+start, surface->w, surface->h};
+    textoInstrucao->rect = aux13;
 
     Objeto *textoTitulo = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(titulo, "Space Attack", amarelo);
@@ -279,6 +289,9 @@ int main(int argc, char *argv[])
     SDL_Texture *credito;
     surface = IMG_Load("imagens/credito.png");
     credito = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Texture *instrucao;
+    surface = IMG_Load("imagens/instrucoes.png");
+    instrucao = SDL_CreateTextureFromSurface(renderer, surface);
 
     //Imagens Gerais
     Objeto *alien = (Objeto*) malloc(sizeof(Objeto));
@@ -356,7 +369,7 @@ int main(int argc, char *argv[])
         {
             case 0://Menu
             {
-                iniciarMenu(renderer, menu, musicaMenu, musicaAtual, textoTitulo, textoPlay, textoRecorde, textoCredito, alien, yoda, opcaoMenu, somSelect, efeitoSonoro);
+                iniciarMenu(renderer, menu, musicaMenu, musicaAtual, textoTitulo, textoPlay, textoInstrucao, textoRecorde, textoCredito, alien, yoda, opcaoMenu, somSelect, efeitoSonoro);
                 break;
             }
             case 1://Jogo
@@ -364,7 +377,7 @@ int main(int argc, char *argv[])
                 if(jogador->vida <= 0)// break AQUI
                 {
                     printf("Sem vida\n");
-                    escolha = 4;
+                    escolha = 5;
                     break;
                 }
 
@@ -424,11 +437,17 @@ int main(int argc, char *argv[])
             }
             case 4://Fim de Jogo
             {
-                iniciarFimDeJogo(renderer, textoGameOver, textoNome, textoJogarNovamente, textoYes, textoNo, musicaFimDeJogo, musicaAtual, jogador, opcaoFimDeJogo, fontePixel, verde, branco, somSelect, efeitoSonoro);
+            	iniciarInstrucao(renderer, instrucao, musicaInstrucao, musicaAtual);
+                break;
+            }
+            case 5://Instrucoes
+            {
+            	iniciarFimDeJogo(renderer, textoGameOver, textoNome, textoJogarNovamente, textoYes, textoNo, musicaFimDeJogo, musicaAtual, jogador, opcaoFimDeJogo, fontePixel, verde, branco, somSelect, efeitoSonoro);
                 if(opcaoFimDeJogo == 0)
                 {
                     opcaoFimDeJogo = escrever(renderer, jogador, fontePixel, branco, textoGameOver, textoNome, textoJogarNovamente, textoYes, textoNo, jogando);
                 }
+            	break;
             }
         }
 
@@ -481,6 +500,11 @@ int main(int argc, char *argv[])
                                 escolha = 3;
                                 break;
                             }
+                            case 3: //Instrucao
+                            {
+                            	escolha = 4;
+                            	break;
+                            }
                         }
                     }
                             /*Movimentação de Seleção Texto - Menu*/
@@ -494,7 +518,7 @@ int main(int argc, char *argv[])
                     }
                     if(evento.key.keysym.sym == SDLK_DOWN)
                     {
-                        if(opcaoMenu + 1 <= 2)
+                        if(opcaoMenu + 1 <= 3)
                         {
                             opcaoMenu = opcaoMenu+1;
                             *efeitoSonoro = 1;
@@ -534,7 +558,11 @@ int main(int argc, char *argv[])
                 {
                     printf("Entrou Credito.\n");
                 }
-                if(escolha == 4) //Fim de Jogo
+                if(escolha == 4) //Instrucao
+                {
+                    printf("Entrou Instrucao.\n");
+                }
+                if(escolha == 5) //Fim de Jogo
                 {
                     printf("Entro no Fim de Jogo\n");
 
@@ -593,7 +621,7 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int *musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu, Mix_Chunk* somSelect, int* efeitoSonoro)
+void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMenu, int *musicaAtual, Objeto *textoTitulo, Objeto *textoPlay, Objeto *textoInstrucao, Objeto *textoRecorde, Objeto *textoCredito, Objeto* alien, Objeto* yoda, int opcaoMenu, Mix_Chunk* somSelect, int* efeitoSonoro)
 {
     if(Mix_PlayingMusic() == 0) //Se não estiver tocando música ...
     {
@@ -613,6 +641,7 @@ void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMen
     SDL_RenderCopy(renderer, textoPlay->textura, NULL, &textoPlay->rect);
     SDL_RenderCopy(renderer, textoRecorde->textura, NULL, &textoRecorde->rect);
     SDL_RenderCopy(renderer, textoCredito->textura, NULL, &textoCredito->rect);
+    SDL_RenderCopy(renderer, textoInstrucao->textura, NULL, &textoInstrucao->rect);
 
     switch(opcaoMenu)
     {
@@ -650,6 +679,18 @@ void iniciarMenu(SDL_Renderer *renderer, SDL_Texture *menu, Mix_Music *musicaMen
             //Baby Yoda
             SDL_Rect aux33 = {textoCredito->rect.x  + textoCredito->rect.w, textoCredito->rect.y + 20,60,58};
             yoda->rect = aux33;
+            SDL_RenderCopy(renderer, yoda->textura, NULL, &yoda->rect);
+            break;
+        }
+        case 3: //Botão Instrucao
+        {
+            SDL_Rect aux4 = {textoInstrucao->rect.x - 60, textoInstrucao->rect.y + 20,48,50};
+            alien->rect = aux4;
+            SDL_RenderCopy(renderer, alien->textura, NULL, &alien->rect);
+
+            //Baby Yoda
+            SDL_Rect aux44 = {textoInstrucao->rect.x  + textoInstrucao->rect.w, textoInstrucao->rect.y + 20,60,58};
+            yoda->rect = aux44;
             SDL_RenderCopy(renderer, yoda->textura, NULL, &yoda->rect);
             break;
         }
@@ -760,6 +801,18 @@ void iniciarFimDeJogo(SDL_Renderer *renderer, Objeto *textoGameOver, Objeto *tex
     }
 
     *musicaAtual = 4;
+}
+
+void iniciarInstrucao(SDL_Renderer *renderer, SDL_Texture *instrucao, Mix_Music *musicaInstrucao, int *musicaAtual)
+{
+	if(*musicaAtual != 5)
+    {
+        Mix_PlayMusic(musicaInstrucao, -1);
+    }
+
+    SDL_RenderCopy(renderer, instrucao, NULL, NULL);
+
+    *musicaAtual = 5;
 }
 
 //Altera os valores do rect
