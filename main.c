@@ -67,6 +67,13 @@ typedef struct obj
     SDL_Rect rect;
 }Objeto;
 
+typedef struct infoTiro
+{
+	int velocidade;
+	int dx;
+	int dy;
+}InfoTiro;
+
 typedef struct tiro Tiro;
 struct tiro
 {
@@ -99,9 +106,9 @@ void iniciarCredito(SDL_Renderer *renderer, SDL_Texture *credito, Mix_Music *mus
 
 //Funções - Jogo
 void mostrarInfoJogo(SDL_Renderer *renderer, Jogador *jogador, Objeto *vida, Objeto *textoPontuacao, TTF_Font *fontePontuacao, SDL_Color branco);
-void moverNave(SDL_Renderer *renderer, Jogador *jogador);
+void moverNave(SDL_Renderer *renderer, Jogador *jogador, InfoTiro* infoTiro);
 
-Tiro* atirar(Jogador *jogador, Tiro *tiros, SDL_Texture *texturaTiro, Mix_Chunk *tiro);
+Tiro* atirar(Jogador *jogador, Tiro *tiros, SDL_Texture *texturaTiro, Mix_Chunk *tiro, InfoTiro* infoTiro);
 Tiro* moverTiros(SDL_Renderer *renderer, Tiro *tiros);
 
 Inimigo* spawnInimigos(InfoInimigo *infoInimigo, Inimigo* inimigos, int tipo);
@@ -285,6 +292,11 @@ int main(int argc, char *argv[])
 
     Tiro *tiros = NULL;
 
+    InfoTiro* infoTiro = (InfoTiro*) malloc(sizeof(InfoTiro));
+    infoTiro->velocidade = 10;
+    infoTiro->dx = 0;
+    infoTiro->dy = 0;
+
     SDL_Texture *texturaTiro;
     surface = IMG_Load("imagens/tiro.png");
     texturaTiro = SDL_CreateTextureFromSurface(renderer, surface);
@@ -361,7 +373,7 @@ int main(int argc, char *argv[])
                 colisao(jogador, infoInimigo, inimigos, tiros, somExplosion);
 
                 //Mover nave
-                moverNave(renderer, jogador);
+                moverNave(renderer, jogador, infoTiro);
                 if(jogador->cooldownMov > 0)
 		    		jogador->cooldownMov--;
 		    	else
@@ -370,7 +382,7 @@ int main(int argc, char *argv[])
                 //Criar e mover tiros
                 if(atirou == 1 && jogador->cooldownTiro == 0)
                 {
-                    tiros = atirar(jogador, tiros, texturaTiro, somTiro);
+                    tiros = atirar(jogador, tiros, texturaTiro, somTiro, infoTiro);
                     jogador->cooldownTiro = 50;
                     atirou = 0;
                 }
@@ -750,55 +762,77 @@ void iniciarFimDeJogo(SDL_Renderer *renderer, Objeto *textoGameOver, Objeto *tex
 }
 
 //Altera os valores do rect
-void moverNave(SDL_Renderer *renderer, Jogador *jogador)
+void moverNave(SDL_Renderer *renderer, Jogador *jogador, InfoTiro* infoTiro)
 {
     float radiano;
 
     //Calcula o dx e dy
     radiano = angleToRad(jogador->angulo);
     jogador->dx = jogador->dy = 0;
+    infoTiro->dx = infoTiro->dy = 0;
 
     //atrito
     jogador->velocidade *= jogador->aceleracao;
     printf("Aceleracao: %.2f\n", jogador->aceleracao);
-    printf("Velocidade: %.2f\n", jogador->velocidade);
+    printf("Velocidade: %.2f\n\n", jogador->velocidade);
 
     if((jogador->angulo >= 0 && jogador->angulo <=90))
     {
         if(jogador->angulo == 0)
+        {
             jogador->dy = - (jogador->velocidade);
+            infoTiro->dy = - (infoTiro->velocidade);
+        }
         else if(jogador->angulo == 90)
+        {
             jogador->dx = jogador->velocidade;
+            infoTiro->dx = infoTiro->velocidade;
+        }
+        
         else //1º quadrante
         {
             jogador->dx = sin(radiano) * jogador->velocidade;
             jogador->dy = - (cos(radiano) * jogador->velocidade);
+            infoTiro->dx = sin(radiano) * infoTiro->velocidade;
+            infoTiro->dy = - (cos(radiano) * infoTiro->velocidade);
         }
     }
     else if(jogador->angulo > 90 && jogador->angulo <= 180)
     {
         if(jogador->angulo == 180)
+        {
             jogador->dy = jogador->velocidade;
+            infoTiro->dy = infoTiro->velocidade;
+        }
         else//2º quadrante
         {
             jogador->dx = sin(radiano) * jogador->velocidade;
             jogador->dy = - (cos(radiano) * jogador->velocidade);
+            infoTiro->dx = sin(radiano) * infoTiro->velocidade;
+            infoTiro->dy = - (cos(radiano) * infoTiro->velocidade);
         }
     }
     else if(jogador->angulo > 180 && jogador->angulo <= 270)
     {
         if(jogador->angulo == 270)
+        {
             jogador->dx = - (jogador->velocidade);
+            infoTiro->dx = - (infoTiro->velocidade);
+        }
         else//3º quadrante
         {
             jogador->dx = sin(radiano) * jogador->velocidade;
             jogador->dy = - (cos(radiano) * jogador->velocidade);
+            infoTiro->dx = sin(radiano) * infoTiro->velocidade;
+            infoTiro->dy = - (cos(radiano) * infoTiro->velocidade);
         }
     }
     else //(angulo > 270 && angulo < 360) //4º quadrante
     {
         jogador->dx = sin(radiano) * jogador->velocidade;
         jogador->dy = - (cos(radiano) * jogador->velocidade);
+        infoTiro->dx = sin(radiano) * infoTiro->velocidade;
+        infoTiro->dy = - (cos(radiano) * infoTiro->velocidade);
     }
 
     switch(jogador->direcao)
@@ -849,19 +883,22 @@ void moverNave(SDL_Renderer *renderer, Jogador *jogador)
             break;
         }
     }
-    // //atrito
-    // if(jogador->velocidade == 0)
-    // 	jogador->direcao = 4;//nao atrito
+
+    //jogador->direcao = 4;
 
     SDL_RenderCopyEx(renderer, jogador->textura, NULL, &jogador->rect, jogador->angulo, NULL, SDL_FLIP_NONE);
 
     //atrito
-    printf("Vel: %.2f\t Dir: %d\n", jogador->velocidade, jogador->direcao);
+
+	printf("Velocidade: %.2f\n", jogador->velocidade);
 
     if(jogador->velocidade > 0 && jogador->direcao == 0 && jogador->cooldownMov == 0)
     {
     	printf("Freio\n");
+    	printf("Velocidade: %.2f\n", jogador->velocidade);
+    	printf("-Aceleracao: %.2f\n", jogador->aceleracao);
     	jogador->aceleracao -= 0.1f;
+    	printf("+Aceleracao: %.2f\n----------------------\n", jogador->aceleracao);
     }
    	if(jogador->velocidade == 0)
     	jogador->direcao = 4;
@@ -932,7 +969,7 @@ void resetJogo(SDL_Renderer* renderer, Jogador *jogador, Inimigo* inimigos, Tiro
 //Criar
 //Adicionar se atirou
 
-Tiro* atirar(Jogador *jogador, Tiro *tiros, SDL_Texture *texturaTiro, Mix_Chunk *somTiro)
+Tiro* atirar(Jogador *jogador, Tiro *tiros, SDL_Texture *texturaTiro, Mix_Chunk *somTiro, InfoTiro* infoTiro)
 {
     Tiro *lst;
     SDL_Rect aux = {jogador->rect.x + (jogador->rect.w/2 - 16/2), jogador->rect.y-5, 16, 40};
@@ -944,8 +981,8 @@ Tiro* atirar(Jogador *jogador, Tiro *tiros, SDL_Texture *texturaTiro, Mix_Chunk 
     tiro->visivel = 1;
     tiro->prox = NULL;
     tiro->rect = aux;
-    tiro->dx = jogador->dx;
-    tiro->dy = jogador->dy;
+    tiro->dx = infoTiro->dx;
+    tiro->dy = infoTiro->dy;
     tiro->angulo = jogador->angulo;
 
     //Lista cheia
@@ -1679,7 +1716,6 @@ void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FIL
     while(0 < fread(&ranking[i].nome, sizeof(char), 15, arqRecorde)) //enquanto não chegar no final do arquivo
     {
         fread(&ranking[i].pontuacao, sizeof(int), 1, arqRecorde);
-
         i++;
     }
 
@@ -1747,9 +1783,6 @@ void mostrarRanking(SDL_Renderer* renderer, Rank* ranking, InfoRank* infoRank, O
         fread(&ranking[i].pontuacao, sizeof(int), 1, arqRecorde);
         printf("Nome: %s\tPontuacao: %d\n", ranking[i].nome, ranking[i].pontuacao);
         i++;
-
-        if(feof(arqRecorde))
-            break;
     }
 
     infoRank->numRanqueados = i;
@@ -1759,6 +1792,8 @@ void mostrarRanking(SDL_Renderer* renderer, Rank* ranking, InfoRank* infoRank, O
     // Juntar o nome com o numero em um char só.
     for(i = 0, espaco = 0; i < infoRank->numRanqueados; i++, espaco += 50)
     {
+    	printf("Tamanho: %d\n", strlen(ranking[i].nome));
+
         strcpy(res, ranking[i].nome); //copia o nome
 
         strcat(res, "-");
