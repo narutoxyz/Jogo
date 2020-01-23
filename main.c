@@ -47,8 +47,10 @@ typedef struct jogador
     int vida; // 3 vidas
     int pontuacao; // pontuação que aparece no jogo
     int direcao; //0-Cima; 1-Direita; 2-Esquerda
-    int velocidade;
+    float velocidade;
+    float aceleracao;
     int cooldownTiro;
+    int cooldownMov;
     int dx;
     int dy;
     char* nome;
@@ -303,8 +305,10 @@ int main(int argc, char *argv[])
     jogador->pontuacao = 0;
     jogador->angulo = 0.0f;
     jogador->velAngular = 10.0f;
-    jogador->velocidade = 10;
+    jogador->velocidade = 10.0f;
+    jogador->aceleracao = 0.0f;
     jogador->cooldownTiro = 0;
+    jogador->cooldownMov = 10;
     jogador->dx = 0;
     jogador->dy = 0;
     jogador->empty = 0;
@@ -358,6 +362,10 @@ int main(int argc, char *argv[])
 
                 //Mover nave
                 moverNave(renderer, jogador);
+                if(jogador->cooldownMov > 0)
+		    		jogador->cooldownMov--;
+		    	else
+		    		jogador->cooldownMov = 10;
 
                 //Criar e mover tiros
                 if(atirou == 1 && jogador->cooldownTiro == 0)
@@ -381,7 +389,7 @@ int main(int argc, char *argv[])
                 if(infoInimigo->cooldownSpawn > 0)
                     infoInimigo->cooldownSpawn--;
 
-                printf("Cooldown: %d\n", infoInimigo->cooldownSpawn);
+                //printf("Cooldown: %d\n", infoInimigo->cooldownSpawn);
 
                 //printf("N de Inimigos: %d\n", infoInimigo->numAtualInimigos);
 
@@ -487,6 +495,8 @@ int main(int argc, char *argv[])
                     if(evento.key.keysym.sym == SDLK_UP)
                     {
                         jogador->direcao = 0;
+                        if(jogador->aceleracao + 0.1f <= 1.1f)
+                        	jogador->aceleracao += 0.1f; 
                     }
                     if(evento.key.keysym.sym == SDLK_RIGHT)
                     {
@@ -748,6 +758,11 @@ void moverNave(SDL_Renderer *renderer, Jogador *jogador)
     radiano = angleToRad(jogador->angulo);
     jogador->dx = jogador->dy = 0;
 
+    //atrito
+    jogador->velocidade *= jogador->aceleracao;
+    printf("Aceleracao: %.2f\n", jogador->aceleracao);
+    printf("Velocidade: %.2f\n", jogador->velocidade);
+
     if((jogador->angulo >= 0 && jogador->angulo <=90))
     {
         if(jogador->angulo == 0)
@@ -822,17 +837,36 @@ void moverNave(SDL_Renderer *renderer, Jogador *jogador)
         case 1: //Ir para direita
         {
             jogador->angulo = (int)(jogador->angulo + jogador->velAngular)%360;
+            jogador->direcao = 4;
+            jogador->aceleracao = 0.0f;
             break;
         }
         case 2: //Ir para esquerda
         {
             jogador->angulo = (int)((jogador->angulo - jogador->velAngular)+360) % 360;
+            jogador->direcao = 4;
+            jogador->aceleracao = 0.0f;
             break;
         }
     }
-    jogador->direcao = 4;
+    // //atrito
+    // if(jogador->velocidade == 0)
+    // 	jogador->direcao = 4;//nao atrito
 
     SDL_RenderCopyEx(renderer, jogador->textura, NULL, &jogador->rect, jogador->angulo, NULL, SDL_FLIP_NONE);
+
+    //atrito
+    printf("Vel: %.2f\t Dir: %d\n", jogador->velocidade, jogador->direcao);
+
+    if(jogador->velocidade > 0 && jogador->direcao == 0 && jogador->cooldownMov == 0)
+    {
+    	printf("Freio\n");
+    	jogador->aceleracao -= 0.1f;
+    }
+   	if(jogador->velocidade == 0)
+    	jogador->direcao = 4;
+
+    jogador->velocidade = 10.0f;
 }
 
 float angleToRad(float angulo)
@@ -846,12 +880,13 @@ void resetJogo(SDL_Renderer* renderer, Jogador *jogador, Inimigo* inimigos, Tiro
     SDL_Surface* surface;
     int i;
 
-    printf("reset 1\n");
-
     jogador->vida = 3;
     jogador->empty = 0;
     jogador->pontuacao = 0;
     jogador->angulo = 0.0f;
+    jogador->aceleracao = 0.0f;
+    jogador->velocidade = 10.0f;
+    jogador->cooldownMov = 10;
     SDL_Rect aux = {(largura - jogador->rect.w)/2, (altura - jogador->rect.h)/2, jogador->rect.w, jogador->rect.h};
     jogador->rect = aux;
 
@@ -892,8 +927,6 @@ void resetJogo(SDL_Renderer* renderer, Jogador *jogador, Inimigo* inimigos, Tiro
 
     infoInimigo->cooldownSpawn = 0;
     infoInimigo->numAtualInimigos = 0;
-
-    printf("reset 2\n\n");
 }
 
 //Criar
@@ -1382,8 +1415,6 @@ int escrever(SDL_Renderer* renderer, Jogador *jogador, TTF_Font *fontePixel, SDL
     SDL_Rect aux = {180, 180, 340, surface->h};
     textoJogador->rect = aux;
 
-    printf("Escrevendo: \n");
-
     while(escrevendo)
     {
         SDL_RenderClear(renderer);
@@ -1642,13 +1673,12 @@ void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FIL
     int i = 0;
     rewind(arqRecorde);
 
-    printf("Salvei\n");
+    printf("Salvando ...\n");
 
     //Quantidade de ranqueados
     while(0 < fread(&ranking[i].nome, sizeof(char), 15, arqRecorde)) //enquanto não chegar no final do arquivo
     {
         fread(&ranking[i].pontuacao, sizeof(int), 1, arqRecorde);
-        printf("X X Nome: %s\tPontuacao: %d\n", ranking[i].nome, ranking[i].pontuacao);
 
         i++;
     }
@@ -1683,7 +1713,7 @@ void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FIL
             //Ordenar o vetor
             qsort(ranking, infoRank->numRanqueados, sizeof(Rank), compararRanks);
 
-            for(i = 0; i <= infoRank->numRanqueados; i++)
+            for(i = 0; i < infoRank->numRanqueados; i++)
             {
                 fwrite(&ranking[i].nome, sizeof(char), 15, arqRecorde);
                 fwrite(&ranking[i].pontuacao, sizeof(int), 1, arqRecorde);
@@ -1724,7 +1754,7 @@ void mostrarRanking(SDL_Renderer* renderer, Rank* ranking, InfoRank* infoRank, O
 
     infoRank->numRanqueados = i;
 
-    printf("Num: %d\n", infoRank->numRanqueados);
+    printf("Numero de Rankeados: %d\n", infoRank->numRanqueados);
 
     // Juntar o nome com o numero em um char só.
     for(i = 0, espaco = 0; i < infoRank->numRanqueados; i++, espaco += 50)
@@ -1737,12 +1767,12 @@ void mostrarRanking(SDL_Renderer* renderer, Rank* ranking, InfoRank* infoRank, O
 
         strcat(res, pontos);
 
-        printf("Nome: %s\n", res);
+        printf("Rankeado[%d]: %s\n", i+1, res);
 
         surface = TTF_RenderText_Solid(fonteRecorde, res, branco);
         textoRank->textura = SDL_CreateTextureFromSurface(renderer, surface);
         textoRank->rect.y = espaco;
-        textoRank->rect.w = strlen(res)*28;
+        textoRank->rect.w = strlen(res)*25;
         SDL_RenderCopy(renderer, textoRank->textura, NULL, &textoRank->rect);
         SDL_Delay(1000/30);
     }
