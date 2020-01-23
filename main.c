@@ -94,7 +94,7 @@ typedef struct inforank
 
 typedef struct rank
 {
-    char nome[30];
+    char nome[10];
     int pontuacao;
 }Rank;
 
@@ -126,6 +126,7 @@ void mostrarRanking(SDL_Renderer* renderer, Rank* ranking, InfoRank* infoRank, O
 
 //Funções - Auxiliares
 float angleToRad(float angulo);
+void verificaNomes(Rank* ranking, InfoRank* infoRank);
 
 int main(int argc, char *argv[])
 {
@@ -302,9 +303,9 @@ int main(int argc, char *argv[])
     texturaTiro = SDL_CreateTextureFromSurface(renderer, surface);
 
     Jogador *jogador = (Jogador*) malloc(sizeof(Jogador));
-    jogador->nome = (char*) malloc(sizeof(char)*15);
+    jogador->nome = (char*) malloc(sizeof(char)*10);
 
-    for(i = 0; i < 15; i++)
+    for(i = 0; i < 10; i++)
     {
         jogador->nome[i] = ' ';
     }
@@ -933,9 +934,9 @@ void resetJogo(SDL_Renderer* renderer, Jogador *jogador, Inimigo* inimigos, Tiro
     textoNome->rect = aux2;
 
     free(jogador->nome);
-    jogador->nome = (char*) malloc(sizeof(char)*15);
+    jogador->nome = (char*) malloc(sizeof(char)*10);
 
-    for(i = 0; i < 15; i++)
+    for(i = 0; i < 10; i++)
     {
         jogador->nome[i] = ' ';
     }
@@ -1449,7 +1450,7 @@ int escrever(SDL_Renderer* renderer, Jogador *jogador, TTF_Font *fontePixel, SDL
     Objeto* textoJogador = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(fontePixel, "-", branco);
     textoJogador->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux = {180, 180, 340, surface->h};
+    SDL_Rect aux = {180, 180, 300, surface->h};
     textoJogador->rect = aux;
 
     while(escrevendo)
@@ -1498,183 +1499,261 @@ int escrever(SDL_Renderer* renderer, Jogador *jogador, TTF_Font *fontePixel, SDL
                     }
                     case SDLK_a:
                     {
-                        jogador->nome[jogador->empty] = 'a';
-                        jogador->empty++;
-                        // textoJogador->rect.w += 28;
-                        break;
-                    }
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'a';
+	                        jogador->empty++;
+                    	}
+                        // textoJogador->rect.w += 2
+	                    break;
+	                }
                     case SDLK_b:
                     {
+                    	if(jogador->empty < 10)
+                    	{
                         jogador->nome[jogador->empty] = 'b';
                         jogador->empty++;
+                    	}
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_c:
                     {
+                    	if(jogador->empty < 10)
+                    	{
                         jogador->nome[jogador->empty] = 'c';
                         jogador->empty++;
+                    	}
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_d:
                     {
-                        jogador->nome[jogador->empty] = 'd';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'd';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_e:
                     {
-                        jogador->nome[jogador->empty] = 'e';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'e';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_f:
                     {
-                        jogador->nome[jogador->empty] = 'f';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'f';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_g:
                     {
-                        jogador->nome[jogador->empty] = 'g';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'g';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_h:
                     {
-                        jogador->nome[jogador->empty] = 'h';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'h';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_i:
                     {
-                        jogador->nome[jogador->empty] = 'i';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'i';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_j:
                     {
-                        jogador->nome[jogador->empty] = 'j';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'j';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_k:
                     {
-                        jogador->nome[jogador->empty] = 'k';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'k';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_l:
                     {
-                        jogador->nome[jogador->empty] = 'l';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'l';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_m:
                     {
-                        jogador->nome[jogador->empty] = 'm';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'm';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_n:
                     {
-                        jogador->nome[jogador->empty] = 'n';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'n';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_o:
                     {
-                        jogador->nome[jogador->empty] = 'o';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'o';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_p:
                     {
-                        jogador->nome[jogador->empty] = 'p';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'p';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_q:
                     {
-                        jogador->nome[jogador->empty] = 'q';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'q';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_r:
                     {
-                        jogador->nome[jogador->empty] = 'r';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'r';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_s:
                     {
-                        jogador->nome[jogador->empty] = 's';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 's';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_t:
                     {
-                        jogador->nome[jogador->empty] = 't';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 't';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_u:
                     {
-                        jogador->nome[jogador->empty] = 'u';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'u';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_v:
                     {
-                        jogador->nome[jogador->empty] = 'v';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'v';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_w:
                     {
-                        jogador->nome[jogador->empty] = 'w';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'w';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_x:
                     {
-                        jogador->nome[jogador->empty] = 'x';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'x';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_y:
                     {
-                        jogador->nome[jogador->empty] = 'y';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'y';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
                     case SDLK_z:
                     {
-                        jogador->nome[jogador->empty] = 'z';
-                        jogador->empty++;
+                    	if(jogador->empty < 10)
+                    	{
+	                        jogador->nome[jogador->empty] = 'z';
+	                        jogador->empty++;
+	                    }
                         // textoJogador->rect.w += 28;
                         break;
                     }
@@ -1713,7 +1792,7 @@ void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FIL
     printf("Salvando ...\n");
 
     //Quantidade de ranqueados
-    while(0 < fread(&ranking[i].nome, sizeof(char), 15, arqRecorde)) //enquanto não chegar no final do arquivo
+    while(0 < fread(&ranking[i].nome, sizeof(char), 10, arqRecorde)) //enquanto não chegar no final do arquivo
     {
         fread(&ranking[i].pontuacao, sizeof(int), 1, arqRecorde);
         i++;
@@ -1733,7 +1812,7 @@ void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FIL
 
         for(i = 0; i <= infoRank->numRanqueados; i++)
         {
-            fwrite(&ranking[i].nome, sizeof(char), 15, arqRecorde);
+            fwrite(&ranking[i].nome, sizeof(char), 10, arqRecorde);
             fwrite(&ranking[i].pontuacao, sizeof(int), 1, arqRecorde);
         }
 
@@ -1751,7 +1830,7 @@ void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FIL
 
             for(i = 0; i < infoRank->numRanqueados; i++)
             {
-                fwrite(&ranking[i].nome, sizeof(char), 15, arqRecorde);
+                fwrite(&ranking[i].nome, sizeof(char), 10, arqRecorde);
                 fwrite(&ranking[i].pontuacao, sizeof(int), 1, arqRecorde);
             }
         }
@@ -1772,13 +1851,12 @@ void mostrarRanking(SDL_Renderer* renderer, Rank* ranking, InfoRank* infoRank, O
 {
     SDL_Surface* surface;
     int i = 0, espaco;
-    char res[30];
-    char pontos[10];
+    char final[40];
 
     rewind(arqRecorde);
 
     //Quantidade de ranqueados
-    while(0 < fread(&ranking[i].nome, sizeof(char), 15, arqRecorde)) //enquanto não chegar no final do arquivo
+    while(0 < fread(&ranking[i].nome, sizeof(char), 10, arqRecorde)) //enquanto não chegar no final do arquivo
     {
         fread(&ranking[i].pontuacao, sizeof(int), 1, arqRecorde);
         printf("Nome: %s\tPontuacao: %d\n", ranking[i].nome, ranking[i].pontuacao);
@@ -1792,22 +1870,16 @@ void mostrarRanking(SDL_Renderer* renderer, Rank* ranking, InfoRank* infoRank, O
     // Juntar o nome com o numero em um char só.
     for(i = 0, espaco = 0; i < infoRank->numRanqueados; i++, espaco += 50)
     {
-    	printf("Tamanho: %d\n", strlen(ranking[i].nome));
+    	verificaNomes(ranking, infoRank);
 
-        strcpy(res, ranking[i].nome); //copia o nome
+        sprintf(final, "%s%d", ranking[i].nome, ranking[i].pontuacao);
 
-        strcat(res, "-");
+        printf("Rankeado[%d]: %s\n", i+1, final);
 
-        sprintf(pontos, "%d", ranking[i].pontuacao);
-
-        strcat(res, pontos);
-
-        printf("Rankeado[%d]: %s\n", i+1, res);
-
-        surface = TTF_RenderText_Solid(fonteRecorde, res, branco);
+        surface = TTF_RenderText_Solid(fonteRecorde, final, branco);
         textoRank->textura = SDL_CreateTextureFromSurface(renderer, surface);
         textoRank->rect.y = espaco;
-        textoRank->rect.w = strlen(res)*25;
+        textoRank->rect.w = strlen(final)*28;
         SDL_RenderCopy(renderer, textoRank->textura, NULL, &textoRank->rect);
         SDL_Delay(1000/30);
     }
@@ -1815,6 +1887,158 @@ void mostrarRanking(SDL_Renderer* renderer, Rank* ranking, InfoRank* infoRank, O
     textoRank->rect.y = 100;
 }
 
+void verificaNomes(Rank* ranking, InfoRank* infoRank)
+{
+	int i, j, k;
+	char nomeOk[10];
+
+	for(i = 0; i < infoRank->numRanqueados; i++)
+	{
+		for(k = 0; k < 10; k++)
+		{
+			nomeOk[k] = '-';
+		}
+
+		for(j = 0; ranking[i].nome[j] != '\0'; j++)
+		{
+			switch(ranking[i].nome[j])
+			{
+				case 'a':
+				{
+					nomeOk[j] = 'a';
+					break;
+				}
+				case 'b':
+				{
+					nomeOk[j] = 'b';
+					break;
+				}
+				case 'c':
+				{
+					nomeOk[j] = 'c';
+					break;
+				}
+				case 'd':
+				{
+					nomeOk[j] = 'd';
+					break;
+				}
+				case 'e':
+				{
+					nomeOk[j] = 'e';
+					break;
+				}
+				case 'f':
+				{
+					nomeOk[j] = 'f';
+					break;
+				}
+				case 'g':
+				{
+					nomeOk[j] = 'g';
+					break;
+				}
+				case 'h':
+				{
+					nomeOk[j] = 'h';
+					break;
+				}
+				case 'i':
+				{
+					nomeOk[j] = 'i';
+					break;
+				}
+				case 'j':
+				{
+					nomeOk[j] = 'j';
+					break;
+				}
+				case 'k':
+				{
+					nomeOk[j] = 'k';
+					break;
+				}
+				case 'l':
+				{
+					nomeOk[j] = 'l';
+					break;
+				}
+				case 'm':
+				{
+					nomeOk[j] = 'm';
+					break;
+				}
+				case 'n':
+				{
+					nomeOk[j] = 'n';
+					break;
+				}
+				case 'o':
+				{
+					nomeOk[j] = 'o';
+					break;
+				}
+				case 'p':
+				{
+					nomeOk[j] = 'p';
+					break;
+				}
+				case 'q':
+				{
+					nomeOk[j] = 'q';
+					break;
+				}
+				case 'r':
+				{
+					nomeOk[j] = 'r';
+					break;
+				}
+				case 's':
+				{
+					nomeOk[j] = 's';
+					break;
+				}
+				case 't':
+				{
+					nomeOk[j] = 't';
+					break;
+				}
+				case 'u':
+				{
+					nomeOk[j] = 'u';
+					break;
+				}
+				case 'v':
+				{
+					nomeOk[j] = 'v';
+					break;
+				}
+				case 'w':
+				{
+					nomeOk[j] = 'w';
+					break;
+				}
+				case 'x':
+				{
+					nomeOk[j] = 'x';
+					break;
+				}
+				case 'y':
+				{
+					nomeOk[j] = 'y';
+					break;
+				}
+				case 'z':
+				{
+					nomeOk[j] = 'z';
+					break;
+				}
+			}
+		}
+
+		strcpy(ranking[i].nome, nomeOk);
+	}
+}
 // int i, posicoes = 10, espaco = 5;
 //     char nome[50];
 //     char numero[10];
