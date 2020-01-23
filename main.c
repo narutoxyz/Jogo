@@ -94,7 +94,7 @@ typedef struct inforank
 
 typedef struct rank
 {
-    char nome[10];
+    char nome[11];
     int pontuacao;
 }Rank;
 
@@ -316,12 +316,13 @@ int main(int argc, char *argv[])
     texturaTiro = SDL_CreateTextureFromSurface(renderer, surface);
 
     Jogador *jogador = (Jogador*) malloc(sizeof(Jogador));
-    jogador->nome = (char*) malloc(sizeof(char)*10);
+    jogador->nome = (char*) malloc(sizeof(char)*11);
 
     for(i = 0; i < 10; i++)
     {
         jogador->nome[i] = ' ';
     }
+    jogador->nome[i] = '\0';
 
     surface = IMG_Load("imagens/nave.png");
     jogador->textura = SDL_CreateTextureFromSurface(renderer, surface);
@@ -946,7 +947,7 @@ void moverNave(SDL_Renderer *renderer, Jogador *jogador, InfoTiro* infoTiro)
 
 	printf("Velocidade: %.2f\n", jogador->velocidade);
 
-    if(jogador->velocidade > 0 && jogador->direcao == 0 && jogador->cooldownMov == 0)
+    if(jogador->velocidade > 0.1f && jogador->direcao == 0 && jogador->cooldownMov == 0)
     {
     	printf("Freio\n");
     	printf("Velocidade: %.2f\n", jogador->velocidade);
@@ -987,12 +988,13 @@ void resetJogo(SDL_Renderer* renderer, Jogador *jogador, Inimigo* inimigos, Tiro
     textoNome->rect = aux2;
 
     free(jogador->nome);
-    jogador->nome = (char*) malloc(sizeof(char)*10);
+    jogador->nome = (char*) malloc(sizeof(char)*11);
 
     for(i = 0; i < 10; i++)
     {
         jogador->nome[i] = ' ';
     }
+    jogador->nome[i] = '\0';
 
     Tiro* lstT;
 
@@ -1503,7 +1505,7 @@ int escrever(SDL_Renderer* renderer, Jogador *jogador, TTF_Font *fontePixel, SDL
     Objeto* textoJogador = (Objeto*) malloc(sizeof(Objeto));
     surface = TTF_RenderText_Solid(fontePixel, "-", branco);
     textoJogador->textura = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect aux = {180, 180, 300, surface->h};
+    SDL_Rect aux = {180, 180, 320, surface->h};
     textoJogador->rect = aux;
 
     while(escrevendo)
@@ -1845,7 +1847,7 @@ void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FIL
     printf("Salvando ...\n");
 
     //Quantidade de ranqueados
-    while(0 < fread(&ranking[i].nome, sizeof(char), 10, arqRecorde)) //enquanto não chegar no final do arquivo
+    while(0 < fread(&ranking[i].nome, sizeof(char), 11, arqRecorde)) //enquanto não chegar no final do arquivo
     {
         fread(&ranking[i].pontuacao, sizeof(int), 1, arqRecorde);
         i++;
@@ -1865,7 +1867,7 @@ void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FIL
 
         for(i = 0; i <= infoRank->numRanqueados; i++)
         {
-            fwrite(&ranking[i].nome, sizeof(char), 10, arqRecorde);
+            fwrite(&ranking[i].nome, sizeof(char), 11, arqRecorde);
             fwrite(&ranking[i].pontuacao, sizeof(int), 1, arqRecorde);
         }
 
@@ -1883,7 +1885,7 @@ void salvarDadosJogador(InfoRank* infoRank, Rank* ranking, Jogador* jogador, FIL
 
             for(i = 0; i < infoRank->numRanqueados; i++)
             {
-                fwrite(&ranking[i].nome, sizeof(char), 10, arqRecorde);
+                fwrite(&ranking[i].nome, sizeof(char), 11, arqRecorde);
                 fwrite(&ranking[i].pontuacao, sizeof(int), 1, arqRecorde);
             }
         }
@@ -1909,7 +1911,7 @@ void mostrarRanking(SDL_Renderer* renderer, Rank* ranking, InfoRank* infoRank, O
     rewind(arqRecorde);
 
     //Quantidade de ranqueados
-    while(0 < fread(&ranking[i].nome, sizeof(char), 10, arqRecorde)) //enquanto não chegar no final do arquivo
+    while(0 < fread(&ranking[i].nome, sizeof(char), 11, arqRecorde)) //enquanto não chegar no final do arquivo
     {
         fread(&ranking[i].pontuacao, sizeof(int), 1, arqRecorde);
         printf("Nome: %s\tPontuacao: %d\n", ranking[i].nome, ranking[i].pontuacao);
@@ -2093,308 +2095,3 @@ void verificaNomes(Rank* ranking, InfoRank* infoRank)
 		strcpy(ranking[i].nome, nomeOk);
 	}
 }
-// int i, posicoes = 10, espaco = 5;
-//     char nome[50];
-//     char numero[10];
-//     // Juntar o nome com o numero em um char só.
-//     for(i = 0; i < posicoes; i++)
-//     {
-
-//     }
-
-// void ordenarRank(Jogador** jogadores, Jogador* jogador)
-// {
-//     int i;
-//     int posicoes = 10;
-//     int maior = 0;
-
-//     for(i = 0; i < posicoes; i++)
-//     {
-
-//     }
-    
-//     qsort(jogadores, posicoes,sizeof(Jogador*), compararJogadores);
-// }
-
-// void lerRank(InfoRank* infoRank)
-// {
-
-// }
-
-//Inimigo teleporta ao atingir as paredes
-// int x1, x2, y1, y2;
-
-// x1 = lst->drect.x;
-// x2 = lst->drect.x + ldt->drect.w;
-// y1 = lst->drect.y;
-// y2 = lst->drect.y + ldt->drect.h;
-
-// if(x1 < 0)
-// {
-//     lst->drect.x = largura-lst->drect.w;
-// }
-// if(x2 > largura)
-// {
-//     lst->drect.x = 0;
-// }
-// if(y1 < 0)
-// {
-//     lst->drect.y = altura-lst->drect.h;
-// }
-// if(y2 > altura)
-// {
-//     lst->drect.y = 0;
-// }
-
-//SDL_Rect aux1 = {200,200,tamanhoX,tamanhoY};
-//SDL_Rect aux2 = {200,200,tamanhoX,tamanhoY};
-//SDL_Rect aux3 = {200,200,tamanhoX,tamanhoY};
-//SDL_Rect aux4 = {200,200,tamanhoX,tamanhoY};
-
-//SDL_StartTextInput();
-    //SDL_StopTextInput();
-
-// switch(evento.key.keysym.sym)
-// {
-//     case SDLK_RETURN:
-//     {
-//         if(jogador->empty > 0)
-//             escrevendo = 0;
-//         break;
-//     }
-//     case SDLK_KP_ENTER:
-//     {
-//         if(jogador->empty > 0)
-//             escrevendo = 0;
-//         break;
-//     }
-//     case SDLK_BACKSPACE:
-//     {
-//         if(jogador->empty > 0)
-//         {
-//             jogador->empty--;
-//             jogador->nome[jogador->empty] = ' ';
-//             textoJogador->rect.w -= 28;
-//         }
-//         break;
-//     }
-//     case SDLK_a:
-//     {
-//         jogador->nome[jogador->empty] = 'a';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_b:
-//     {
-//         jogador->nome[jogador->empty] = 'b';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_c:
-//     {
-//         jogador->nome[jogador->empty] = 'c';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_d:
-//     {
-//         jogador->nome[jogador->empty] = 'd';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_e:
-//     {
-//         jogador->nome[jogador->empty] = 'e';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_f:
-//     {
-//         jogador->nome[jogador->empty] = 'f';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_g:
-//     {
-//         jogador->nome[jogador->empty] = 'g';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_h:
-//     {
-//         jogador->nome[jogador->empty] = 'h';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_i:
-//     {
-//         jogador->nome[jogador->empty] = 'i';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_j:
-//     {
-//         jogador->nome[jogador->empty] = 'j';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_k:
-//     {
-//         jogador->nome[jogador->empty] = 'k';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_l:
-//     {
-//         jogador->nome[jogador->empty] = 'l';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_m:
-//     {
-//         jogador->nome[jogador->empty] = 'm';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_n:
-//     {
-//         jogador->nome[jogador->empty] = 'n';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_o:
-//     {
-//         jogador->nome[jogador->empty] = 'o';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_p:
-//     {
-//         jogador->nome[jogador->empty] = 'p';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_q:
-//     {
-//         jogador->nome[jogador->empty] = 'q';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_r:
-//     {
-//         jogador->nome[jogador->empty] = 'r';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_s:
-//     {
-//         jogador->nome[jogador->empty] = 's';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_t:
-//     {
-//         jogador->nome[jogador->empty] = 't';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_u:
-//     {
-//         jogador->nome[jogador->empty] = 'u';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_v:
-//     {
-//         jogador->nome[jogador->empty] = 'v';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_w:
-//     {
-//         jogador->nome[jogador->empty] = 'w';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_x:
-//     {
-//         jogador->nome[jogador->empty] = 'x';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_y:
-//     {
-//         jogador->nome[jogador->empty] = 'y';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-//     case SDLK_z:
-//     {
-//         jogador->nome[jogador->empty] = 'z';
-//         jogador->empty++;
-//         textoJogador->rect.w += 28;
-//         break;
-//     }
-// }
-
-// else if(evento.type == SDL_TEXTINPUT && evento.key.keysym.sym != SDLK_RIGHT && evento.key.keysym.sym != SDLK_UP && evento.key.keysym.sym != SDLK_DOWN && evento.key.keysym.sym != SDLK_LEFT)
-// {
-//     jogador->nome[jogador->empty] = *evento.text.text;
-//     //strcat(jogador->nome, evento.text.text);
-//     jogador->empty++;
-//     textoJogador->rect.w += 28;
-// }
-// else if(evento.key.keysym.sym == SDLK_BACKSPACE && jogador->empty > 0)
-// {
-//     jogador->empty--;
-//     jogador->nome[jogador->empty] = ' ';
-//     textoJogador->rect.w -= 28;
-// }
-// if((evento.key.keysym.sym == SDLK_RETURN || evento.key.keysym.sym == SDLK_KP_ENTER) && jogador->empty > 0)
-// {
-//     escrevendo = 0;
-// }
-
-// int i;
-
-    //Limpar os ' ' do nome do jogador.
-    // for(i = 0; jogador->nome[i] != '\0'; i++)
-    // {
-    //     if(jogador->nome[i] == ' ')
-    //         break;
-    // }
-
-    // printf("Tinha %d caracteres\n", strlen(jogador->nome));
-
-    // char string[30];
-    // strncat(string, jogador->nome, i-1);
-
-    // free(jogador->nome);
-    // strcpy(jogador->nome, string);
-
-    // printf("Ficou com %d caracteres\n", strlen(jogador->nome));
