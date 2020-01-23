@@ -1925,7 +1925,7 @@ void mostrarRanking(SDL_Renderer* renderer, Rank* ranking, InfoRank* infoRank, O
     {
     	verificaNomes(ranking, infoRank);
 
-        sprintf(final, "%s%d", ranking[i].nome, ranking[i].pontuacao);
+        sprintf(final, "%s:%d", ranking[i].nome, ranking[i].pontuacao);
 
         printf("Rankeado[%d]: %s\n", i+1, final);
 
@@ -1943,7 +1943,7 @@ void mostrarRanking(SDL_Renderer* renderer, Rank* ranking, InfoRank* infoRank, O
 void verificaNomes(Rank* ranking, InfoRank* infoRank)
 {
 	int i, j, k;
-	char nomeOk[10];
+	char nomeOk[11];
 
 	for(i = 0; i < infoRank->numRanqueados; i++)
 	{
@@ -1951,6 +1951,7 @@ void verificaNomes(Rank* ranking, InfoRank* infoRank)
 		{
 			nomeOk[k] = '-';
 		}
+		nomeOk[k] = '\0';
 
 		for(j = 0; ranking[i].nome[j] != '\0'; j++)
 		{
